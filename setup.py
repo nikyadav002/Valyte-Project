@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="valyte",
-    version="0.1.0",
+    version="0.1.2",
     packages=find_packages(),
     install_requires=[
         "numpy",
@@ -20,7 +20,7 @@ setup(
     },
     author="Nikhil",
     author_email="nikhil@example.com",
-    description="A CLI tool for VASP post-processing (DOS plotting)",
+    description="A comprehensive CLI tool for VASP pre-processing (Supercells, K-points) and post-processing (DOS, Band Structure plotting)",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/nikyadav002/Valyte-Project",
