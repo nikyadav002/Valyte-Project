@@ -27,7 +27,13 @@
 
 ## Installation
 
-Clone the repository and install in editable mode:
+Install Valyte directly from PyPI:
+
+```bash
+pip install valyte
+```
+
+Or install from source:
 
 ```bash
 git clone https://github.com/nikyadav002/Valyte-Project
@@ -47,9 +53,7 @@ pip install -e .
 To update to the latest version:
 
 ```bash
-cd Valyte-Project
-git pull
-pip install -e .
+pip install --upgrade valyte
 ```
 
 ## Usage
