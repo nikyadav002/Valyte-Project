@@ -2,16 +2,20 @@ from setuptools import setup, find_packages
 
 setup(
     name="valyte",
-    version="0.1.7",
+    version="0.1.8",
     packages=find_packages(),
     install_requires=[
         "numpy",
         "matplotlib",
         "pymatgen",
+        "scipy",
+        "click",
+        "seekpath"
     ],
     include_package_data=True,
     package_data={
         "valyte": ["*.png"],
+        "valyte.data": ["*.json"],
     },
     entry_points={
         "console_scripts": [

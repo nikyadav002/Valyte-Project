@@ -116,6 +116,9 @@ def main():
     kpt_gen_parser.add_argument("-i", "--input", default="POSCAR", help="Input POSCAR file")
     kpt_gen_parser.add_argument("-n", "--npoints", type=int, default=40, help="Points per segment")
     kpt_gen_parser.add_argument("-o", "--output", default="KPOINTS", help="Output filename")
+    kpt_gen_parser.add_argument("--symprec", type=float, default=0.01, help="Symmetry precision (default: 0.01)")
+
+    kpt_gen_parser.add_argument("--mode", default="bradcrack", help="Standardization mode (default: bradcrack)")
 
     # --- K-Point Generation (Interactive) ---
     subparsers.add_parser("kpt", help="Interactive K-Point Generation (SCF)")
@@ -175,7 +178,9 @@ def main():
                 generate_band_kpoints(
                     poscar_path=args.input,
                     npoints=args.npoints,
-                    output=args.output
+                    output=args.output,
+                    symprec=args.symprec,
+                    mode=args.mode
                 )
             except Exception as e:
                 print(f"❌ Error: {e}")
