@@ -94,6 +94,9 @@ valyte supercell 3 3 1 -i POSCAR_primitive -o POSCAR_3x3x1
 
 Automatically generate a KPOINTS file with high-symmetry paths for band structure calculations.
 
+> [!TIP]
+> **Smart K-Path Generation (New in v0.1.7+)**: Valyte now automatically determines the standard path (e.g., `\Gamma - Y - V` for Monoclinic cells) using the **Bradley-Cracknell** convention by default. This ensures clean, publication-ready labels without external dependencies.
+
 ```bash
 valyte band kpt-gen [options]
 ```
@@ -102,11 +105,19 @@ valyte band kpt-gen [options]
 - `-i`, `--input`: Input POSCAR file (default: `POSCAR`).
 - `-n`, `--npoints`: Points per segment (default: `40`).
 - `-o`, `--output`: Output filename (default: `KPOINTS`).
+- `--mode`: Path convention. Options: `bradcrack` (Default), `seekpath`, `latimer_munro`, `setyawan_curtarolo`.
 
 **Example:**
 ```bash
-valyte band kpt-gen -n 60 -i POSCAR_relaxed -o KPOINTS_band
+# Default (Smart/BradCrack)
+valyte band kpt-gen -n 60
+
+# Explicitly use Seekpath convention
+valyte band kpt-gen --mode seekpath
 ```
+
+> [!IMPORTANT]
+> The command will generate a **`POSCAR_standard`** file. You **MUST** use this structure for your band structure calculation (i.e., `cp POSCAR_standard POSCAR`) because the K-path corresponds to this specific orientation. Using your original POSCAR may result in incorrect paths.
 
 ### 🕸️ Generate K-Points (Interactive)
 
