@@ -15,6 +15,8 @@ try:
 except ImportError:
     import importlib_resources as ilr_files
 
+from valyte.potcar import generate_potcar
+
 
 def generate_band_kpoints(poscar_path="POSCAR", npoints=40, output="KPOINTS", symprec=0.01, mode="bradcrack"):
     """
@@ -110,6 +112,15 @@ def generate_band_kpoints(poscar_path="POSCAR", npoints=40, output="KPOINTS", sy
 
     except Exception as e:
         print(f"❌ Error writing KPOINTS file: {e}")
+
+    # --- POTCAR Generation ---
+    try:
+        print("ℹ️  Generating default POTCAR (PBE)...")
+        generate_potcar(poscar_path=poscar_path, functional="PBE", output="POTCAR")
+    except Exception as e:
+        print(f"⚠️  Could not generate POTCAR: {e}")
+        print("   (Proceeding without stopping, as KPOINTS are already generated)")
+
 
 
 class BradCrackKpath:

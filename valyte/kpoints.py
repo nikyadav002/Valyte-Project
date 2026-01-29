@@ -10,6 +10,7 @@ import sys
 import numpy as np
 from pymatgen.core import Structure
 from pymatgen.io.vasp.inputs import Kpoints
+from valyte.potcar import generate_potcar
 
 def generate_kpoints_interactive():
     """
@@ -94,3 +95,14 @@ def generate_kpoints_interactive():
     output_file = "KPOINTS"
     kpts.write_file(output_file)
     print(f"\n✅ Generated {output_file}!")
+
+    # --- POTCAR Generation (if missing) ---
+    potcar_file = "POTCAR"
+    if not os.path.exists(potcar_file):
+        try:
+            print(f"\nℹ️  POTCAR not found. Generating default POTCAR (PBE)...")
+            generate_potcar(poscar_path=poscar_path, functional="PBE", output=potcar_file)
+        except Exception as e:
+            print(f"⚠️  Could not generate POTCAR: {e}")
+    else:
+        print(f"ℹ️  POTCAR already exists, skipping generation.")

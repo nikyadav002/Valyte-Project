@@ -27,6 +27,7 @@ from valyte.band import generate_band_kpoints
 from valyte.band_plot import plot_band_structure
 from valyte.dos_plot import load_dos, plot_dos
 from valyte.kpoints import generate_kpoints_interactive
+from valyte.potcar import generate_potcar
 
 def parse_element_selection(inputs):
     """
@@ -123,6 +124,12 @@ def main():
     # --- K-Point Generation (Interactive) ---
     subparsers.add_parser("kpt", help="Interactive K-Point Generation (SCF)")
 
+    # --- POTCAR Generation ---
+    potcar_parser = subparsers.add_parser("potcar", help="Generate POTCAR")
+    potcar_parser.add_argument("-i", "--input", default="POSCAR", help="Input POSCAR file")
+    potcar_parser.add_argument("-o", "--output", default="POTCAR", help="Output filename")
+    potcar_parser.add_argument("--functional", default="PBE", help="Functional (default: PBE)")
+
     args = parser.parse_args()
 
     if args.command == "dos":
@@ -168,6 +175,17 @@ def main():
     elif args.command == "kpt":
         try:
             generate_kpoints_interactive()
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            sys.exit(1)
+
+    elif args.command == "potcar":
+        try:
+            generate_potcar(
+                poscar_path=args.input,
+                functional=args.functional,
+                output=args.output
+            )
         except Exception as e:
             print(f"❌ Error: {e}")
             sys.exit(1)
