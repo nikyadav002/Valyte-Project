@@ -133,6 +133,38 @@ This command will prompt you for:
 
 It automatically calculates the optimal grid based on your `POSCAR` structure.
 
+---
+
+### 🧪 Generate POTCAR
+
+Generate a `POTCAR` file based on the species in your `POSCAR`.
+
+```bash
+valyte potcar [options]
+```
+
+**Options:**
+- `-i`, `--input`: Input POSCAR file (default: `POSCAR`).
+- `-o`, `--output`: Output filename (default: `POTCAR`).
+- `--functional`: Functional to use (default: `PBE`). Options include `PBE`, `PBE_52`, `PBE_54`, `LDA`, etc.
+
+**Example:**
+```bash
+# Generate POTCAR using default PBE functional
+valyte potcar
+
+# Use a specific functional
+valyte potcar --functional PBE_54
+
+# Specify input and output files
+valyte potcar -i POSCAR_relaxed -o POTCAR_new
+```
+
+> [!IMPORTANT]
+> **Pymatgen Configuration Required**: This command requires Pymatgen to be configured with your VASP pseudopotential directory. Set `PMG_VASP_PSP_DIR` in your `~/.pmgrc.yaml` file. See the [Pymatgen documentation](https://pymatgen.org/installation.html#potcar-setup) for setup instructions.
+
+---
+
 #### 2. Plot Band Structure
 
 Plot the electronic band structure from `vasprun.xml`.
