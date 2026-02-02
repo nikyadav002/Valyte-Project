@@ -1,17 +1,5 @@
 #!/usr/bin/env python3
-"""
-Valyte CLI Tool
-===============
-
-A post-processing tool for VASP outputs, designed to create publication-quality
-plots with a modern aesthetic. Supports DOS and band structure plotting.
-
-Features:
-- DOS plotting with gradient fills
-- Band structure plotting
-- Smart legend positioning
-- Custom font support
-"""
+"""Valyte CLI entry point."""
 
 import os
 import sys
@@ -29,58 +17,49 @@ from valyte.dos_plot import load_dos, plot_dos
 from valyte.kpoints import generate_kpoints_interactive
 from valyte.potcar import generate_potcar
 
+
+def _normalize_element(symbol: str) -> str:
+    if not symbol:
+        return symbol
+    return symbol[0].upper() + symbol[1:].lower()
+
+
 def parse_element_selection(inputs):
-    """
-    Parses user input for elements and orbitals.
-    
-    Args:
-        inputs (list): List of strings, e.g., ["Ag", "Bi(s)", "O(p)"]
-        
-    Returns:
-        tuple: (elements_to_load, plotting_config)
-            elements_to_load (list): Elements to extract from VASP data.
-            plotting_config (list): List of (Element, Orbital) tuples.
-    """
+    """Parse element/orbital selections like "Fe", "Fe(d)", "O(p)"."""
     if not inputs:
         return None, None
 
-    elements_to_load = set()
+    elements_to_load = []
+    elements_seen = set()
     plotting_config = []
-    
-    # Regex to match "Element" or "Element(orbital)"
-    pattern = re.compile(r"^([A-Za-z]+)(?:\(([spdf])\))?$")
-    
+
+    pattern = re.compile(r"^([A-Za-z]+)(?:\(([spdf])\))?$", re.IGNORECASE)
+
     for item in inputs:
-        match = pattern.match(item)
-        if match:
-            el = match.group(1)
-            orb = match.group(2) # None if no orbital specified
-            
-            elements_to_load.add(el)
-            if orb:
-                plotting_config.append((el, orb))
-            else:
-                plotting_config.append((el, 'total'))
-        else:
-            print(f"⚠️ Warning: Could not parse '{item}'. Ignoring.")
-            
+        match = pattern.match(item.strip())
+        if not match:
+            print(f"Warning: could not parse '{item}'. Ignoring.")
+            continue
 
-    return list(elements_to_load), plotting_config
+        el = _normalize_element(match.group(1))
+        orb = match.group(2).lower() if match.group(2) else None
+
+        if el not in elements_seen:
+            elements_to_load.append(el)
+            elements_seen.add(el)
+
+        plotting_config.append((el, orb or "total"))
+
+    return elements_to_load, plotting_config
 
 
-# ===============================================================
-# Main CLI
-# ===============================================================
 def main():
-    """
-    Main entry point for the CLI.
-    """
     parser = argparse.ArgumentParser(description="Valyte: VASP Post-Processing Tool")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # --- DOS Subcommand ---
+    # DOS
     dos_parser = subparsers.add_parser("dos", help="Plot Density of States (DOS)")
-    dos_parser.add_argument("filepath", nargs="?", help="Path to vasprun.xml or directory containing it (optional)")
+    dos_parser.add_argument("filepath", nargs="?", help="Path to vasprun.xml or directory containing it")
     dos_parser.add_argument("--vasprun", help="Explicit path to vasprun.xml (alternative to positional argument)")
     dos_parser.add_argument("-e", "--elements", nargs="+", help="Elements/Orbitals to plot (e.g., 'Fe O' or 'Fe(d) O(p)')")
     dos_parser.add_argument("-o", "--output", default="valyte_dos.png", help="Output filename")
@@ -92,7 +71,7 @@ def main():
     dos_parser.add_argument("--legend-cutoff", type=float, default=0.10, help="Threshold for legend visibility (0.0-1.0)")
     dos_parser.add_argument("--font", default="Arial", help="Font family")
 
-    # --- Supercell Subcommand ---
+    # Supercell
     supercell_parser = subparsers.add_parser("supercell", help="Create a supercell")
     supercell_parser.add_argument("nx", type=int, help="Supercell size x")
     supercell_parser.add_argument("ny", type=int, help="Supercell size y")
@@ -100,31 +79,29 @@ def main():
     supercell_parser.add_argument("-i", "--input", default="POSCAR", help="Input POSCAR file")
     supercell_parser.add_argument("-o", "--output", default="POSCAR_supercell", help="Output filename")
 
-    # --- Band Structure Subcommand ---
+    # Band
     band_parser = subparsers.add_parser("band", help="Band structure utilities")
     band_subparsers = band_parser.add_subparsers(dest="band_command", help="Band commands")
 
-    # Band Plotting (default if no subcommand)
-    # Note: argparse doesn't easily support default subcommands, so we handle this in logic
+    # Band plotting (default)
     band_parser.add_argument("--vasprun", default=".", help="Path to vasprun.xml or directory")
     band_parser.add_argument("--kpoints", help="Path to KPOINTS file (for labels)")
     band_parser.add_argument("-o", "--output", default="valyte_band.png", help="Output filename")
     band_parser.add_argument("--ylim", nargs=2, type=float, help="Energy range (min max)")
     band_parser.add_argument("--font", default="Arial", help="Font family")
 
-    # Band KPOINTS Generation
+    # Band KPOINTS generation
     kpt_gen_parser = band_subparsers.add_parser("kpt-gen", help="Generate KPOINTS for band structure")
     kpt_gen_parser.add_argument("-i", "--input", default="POSCAR", help="Input POSCAR file")
     kpt_gen_parser.add_argument("-n", "--npoints", type=int, default=40, help="Points per segment")
     kpt_gen_parser.add_argument("-o", "--output", default="KPOINTS", help="Output filename")
     kpt_gen_parser.add_argument("--symprec", type=float, default=0.01, help="Symmetry precision (default: 0.01)")
-
     kpt_gen_parser.add_argument("--mode", default="bradcrack", help="Standardization mode (default: bradcrack)")
 
-    # --- K-Point Generation (Interactive) ---
+    # KPOINTS (interactive)
     subparsers.add_parser("kpt", help="Interactive K-Point Generation (SCF)")
 
-    # --- POTCAR Generation ---
+    # POTCAR
     potcar_parser = subparsers.add_parser("potcar", help="Generate POTCAR")
     potcar_parser.add_argument("-i", "--input", default="POSCAR", help="Input POSCAR file")
     potcar_parser.add_argument("-o", "--output", default="POTCAR", help="Output filename")
@@ -133,17 +110,17 @@ def main():
     args = parser.parse_args()
 
     if args.command == "dos":
-        # Resolve filepath: positional > flag > current dir
         target_path = args.filepath if args.filepath else args.vasprun
         if not target_path:
             target_path = "."
-            
+
         elements, plotting_config = parse_element_selection(args.elements)
-        
+
         try:
             dos_data, pdos_data = load_dos(target_path, elements)
             plot_dos(
-                dos_data, pdos_data, 
+                dos_data,
+                pdos_data,
                 out=args.output,
                 xlim=tuple(args.xlim),
                 ylim=tuple(args.ylim) if args.ylim else None,
@@ -152,11 +129,10 @@ def main():
                 show_total=not args.pdos,
                 plotting_config=plotting_config,
                 legend_cutoff=args.legend_cutoff,
-                scale_factor=args.scale
+                scale_factor=args.scale,
             )
-            # print(f"✅ DOS plot saved to {args.output}") # Silent mode
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"Error: {e}")
             sys.exit(1)
 
     elif args.command == "supercell":
@@ -166,17 +142,17 @@ def main():
                 nx=args.nx,
                 ny=args.ny,
                 nz=args.nz,
-                output=args.output
+                output=args.output,
             )
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"Error: {e}")
             sys.exit(1)
-            
+
     elif args.command == "kpt":
         try:
             generate_kpoints_interactive()
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"Error: {e}")
             sys.exit(1)
 
     elif args.command == "potcar":
@@ -184,10 +160,10 @@ def main():
             generate_potcar(
                 poscar_path=args.input,
                 functional=args.functional,
-                output=args.output
+                output=args.output,
             )
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"Error: {e}")
             sys.exit(1)
 
     elif args.command == "band":
@@ -198,23 +174,19 @@ def main():
                     npoints=args.npoints,
                     output=args.output,
                     symprec=args.symprec,
-                    mode=args.mode
+                    mode=args.mode,
                 )
             except Exception as e:
-                print(f"❌ Error: {e}")
+                print(f"Error: {e}")
                 sys.exit(1)
         elif args.band_command == "plot" or args.band_command is None:
-             # Default behavior for 'valyte band' is plotting
             try:
-                # Determine input path: --vasprun > positional > current dir
-                target_path = args.vasprun or args.filepath or "."
+                target_path = args.vasprun or "."
                 if os.path.isdir(target_path):
                     target_path = os.path.join(target_path, "vasprun.xml")
-                
-                # Determine KPOINTS path
+
                 kpoints_path = args.kpoints
                 if not kpoints_path:
-                    # Try to find KPOINTS in the same directory as vasprun.xml
                     base_dir = os.path.dirname(target_path)
                     potential_kpoints = os.path.join(base_dir, "KPOINTS")
                     if os.path.exists(potential_kpoints):
@@ -225,16 +197,18 @@ def main():
                     kpoints_path=kpoints_path,
                     output=args.output,
                     ylim=tuple(args.ylim) if args.ylim else None,
-                    font=args.font
+                    font=args.font,
                 )
             except Exception:
                 import traceback
+
                 traceback.print_exc()
                 sys.exit(1)
         else:
             band_parser.print_help()
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()
