@@ -16,6 +16,7 @@ from valyte.band_plot import plot_band_structure
 from valyte.dos_plot import load_dos, plot_dos
 from valyte.kpoints import generate_kpoints_interactive
 from valyte.potcar import generate_potcar
+from valyte.ipr import run_ipr_interactive
 
 
 def _normalize_element(symbol: str) -> str:
@@ -107,6 +108,9 @@ def main():
     potcar_parser.add_argument("-o", "--output", default="POTCAR", help="Output filename")
     potcar_parser.add_argument("--functional", default="PBE", help="Functional (default: PBE)")
 
+    # IPR
+    subparsers.add_parser("ipr", help="Compute IPR from PROCAR")
+
     args = parser.parse_args()
 
     if args.command == "dos":
@@ -162,6 +166,13 @@ def main():
                 functional=args.functional,
                 output=args.output,
             )
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.command == "ipr":
+        try:
+            run_ipr_interactive()
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)
