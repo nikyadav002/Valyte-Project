@@ -23,6 +23,7 @@
   - VBM alignment to 0 eV.
   - Color-coded bands (Purple for VB, Teal for CB).
   - High-symmetry path labels from KPOINTS.
+- **IPR Analysis**: Compute Inverse Participation Ratio from PROCAR to analyze wavefunction localization.
 - **Publication Quality**: Clean aesthetics, custom fonts (Arial, Helvetica, Times New Roman), high DPI output.
 
 ## Installation
@@ -228,5 +229,31 @@ valyte dos -e Fe "Fe(d)"
 ```bash
 valyte dos ./vasp_data --xlim -5 5 -o my_dos.png
 ```
+
+---
+
+### 📐 Compute IPR (Inverse Participation Ratio)
+
+Compute the Inverse Participation Ratio (IPR) from VASP `PROCAR` to analyze wavefunction localization.
+
+```bash
+valyte ipr
+```
+
+This interactive command will:
+1. Read the `PROCAR` file from the current directory.
+2. Display the number of k-points, bands, and atoms.
+3. Prompt you for **band indices** to analyze (e.g., `5 6 7` or `5-7`).
+4. Optionally show per-k-point IPR values.
+5. Save results to `ipr_procar.dat`.
+
+**Output Columns:**
+- **Band**: Band index.
+- **Energy**: Average energy (eV) across k-points.
+- **IPR**: Inverse Participation Ratio (higher = more localized).
+- **N_eff**: Effective number of atoms (1/IPR).
+
+> [!TIP]
+> Use IPR to identify localized defect states. A state localized on a single atom has IPR ≈ 1.0 and N_eff ≈ 1. Delocalized band states have small IPR and large N_eff.
 
 </details>
