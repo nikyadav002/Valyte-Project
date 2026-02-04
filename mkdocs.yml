@@ -1,0 +1,38 @@
+site_name: Valyte
+site_description: A comprehensive CLI tool for VASP pre-processing and post-processing
+site_author: Nikhil
+site_url: https://valyte.readthedocs.io/
+
+repo_name: nikyadav002/Valyte-Project
+repo_url: https://github.com/nikyadav002/Valyte-Project
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+
+nav:
+  - Home: index.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.details
+  - tables
