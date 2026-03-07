@@ -1,5 +1,5 @@
 site_name: Valyte
-site_description: A comprehensive CLI tool for VASP pre-processing and post-processing
+site_description: A CLI tool for VASP pre-processing and post-processing with publication-quality output
 site_author: Nikhil
 site_url: https://valyte.readthedocs.io/
 
@@ -24,10 +24,17 @@ theme:
   features:
     - navigation.sections
     - navigation.expand
+    - navigation.top
     - content.code.copy
+    - content.code.annotate
+    - toc.follow
 
 nav:
   - Home: index.md
+  - Band Structure: band.md
+  - DOS: dos.md
+  - Pre-processing: preprocessing.md
+  - IPR: ipr.md
 
 markdown_extensions:
   - admonition
@@ -35,4 +42,9 @@ markdown_extensions:
       anchor_linenums: true
   - pymdownx.superfences
   - pymdownx.details
+  - pymdownx.inlinehilite
   - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
