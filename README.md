@@ -6,7 +6,7 @@
   <a href="https://pypi.org/project/valyte/"><img src="https://img.shields.io/pypi/v/valyte?color=7c3aed&label=PyPI" alt="PyPI Version"></a>
   <a href="https://pypi.org/project/valyte/"><img src="https://img.shields.io/pypi/pyversions/valyte?color=7c3aed" alt="Python Versions"></a>
   <a href="https://valyte-project.readthedocs.io/en/latest/"><img src="https://readthedocs.org/projects/valyte-project/badge/?version=latest" alt="Docs"></a>
-  <a href="https://github.com/nikyadav002/Valyte-Project/blob/main/LICENSE"><img src="https://img.shields.io/github/license/nikyadav002/Valyte-Project?color=2a9d8f" alt="License"></a>
+  <a href="https://github.com/nikyadav002/Valyte-Project/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-2a9d8f" alt="License"></a>
 </p>
 
 # Valyte
@@ -277,3 +277,9 @@ Interactive — reads `PROCAR`, shows system info, prompts for band indices, sav
 A state localized on a single atom has IPR ≈ 1 and N_eff ≈ 1. Delocalized band states have small IPR and large N_eff. Use IPR to identify defect states in supercell calculations.
 
 </details>
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
