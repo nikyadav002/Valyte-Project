@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pymatgen")
 
 from valyte.supercell import create_supercell
 from valyte.band import generate_band_kpoints
-from valyte.band_plot import plot_band_structure
+from valyte.band_plot import plot_band_structure, plot_orbital_band_structure
 from valyte.dos_plot import load_dos, plot_dos
 from valyte.kpoints import generate_kpoints_interactive
 from valyte.potcar import generate_potcar
@@ -90,6 +90,21 @@ def main():
     band_parser.add_argument("-o", "--output", default="valyte_band.png", help="Output filename")
     band_parser.add_argument("--ylim", nargs=2, type=float, help="Energy range (min max)")
     band_parser.add_argument("--font", default="Arial", help="Font family")
+    band_parser.add_argument(
+        "--tricolor", nargs=3, metavar=("SPEC1", "SPEC2", "SPEC3"),
+        help="Enable tricolor orbital-resolved mode with 3 orbital/element specs. "
+             "Formats: 's'|'p'|'d'|'f', 'Fe', 'Fe:d', 'O(p)'. Example: --tricolor s p d",
+    )
+    band_parser.add_argument(
+        "--tricolors", nargs=3, metavar=("COLOR1", "COLOR2", "COLOR3"),
+        default=["#e74c3c", "#2ecc71", "#3498db"],
+        help="Colors for the 3 tricolor specs (default: red green blue)",
+    )
+    band_parser.add_argument(
+        "--tri-labels", nargs=3, metavar=("LBL1", "LBL2", "LBL3"),
+        help="Labels for the triangle legend (defaults to the spec strings)",
+    )
+    band_parser.add_argument("--lw", type=float, default=2.0, help="Line width for tricolor bands (default: 2.0)")
 
     # Band KPOINTS generation
     kpt_gen_parser = band_subparsers.add_parser("kpt-gen", help="Generate KPOINTS for band structure")
@@ -203,13 +218,28 @@ def main():
                     if os.path.exists(potential_kpoints):
                         kpoints_path = potential_kpoints
 
-                plot_band_structure(
-                    vasprun_path=target_path,
-                    kpoints_path=kpoints_path,
-                    output=args.output,
-                    ylim=tuple(args.ylim) if args.ylim else None,
-                    font=args.font,
-                )
+                if args.tricolor:
+                    tri_labels = args.tri_labels if args.tri_labels else list(args.tricolor)
+                    output = args.output if args.output != "valyte_band.png" else "valyte_band_orbital.png"
+                    plot_orbital_band_structure(
+                        vasprun_path=target_path,
+                        kpoints_path=kpoints_path,
+                        output=output,
+                        ylim=tuple(args.ylim) if args.ylim else None,
+                        tricolor=args.tricolor,
+                        tricolors=args.tricolors,
+                        tri_labels=tri_labels,
+                        lw=args.lw,
+                        font=args.font,
+                    )
+                else:
+                    plot_band_structure(
+                        vasprun_path=target_path,
+                        kpoints_path=kpoints_path,
+                        output=args.output,
+                        ylim=tuple(args.ylim) if args.ylim else None,
+                        font=args.font,
+                    )
             except Exception:
                 import traceback
 
