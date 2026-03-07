@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://pypi.org/project/valyte/"><img src="https://img.shields.io/pypi/v/valyte?color=7c3aed&label=PyPI" alt="PyPI Version"></a>
   <a href="https://pypi.org/project/valyte/"><img src="https://img.shields.io/pypi/pyversions/valyte?color=7c3aed" alt="Python Versions"></a>
-  <a href="https://valyte.readthedocs.io/"><img src="https://readthedocs.org/projects/valyte/badge/?version=latest" alt="Docs"></a>
+  <a href="https://valyte-project.readthedocs.io/en/latest/"><img src="https://readthedocs.org/projects/valyte-project/badge/?version=latest" alt="Docs"></a>
   <a href="https://github.com/nikyadav002/Valyte-Project/blob/main/LICENSE"><img src="https://img.shields.io/github/license/nikyadav002/Valyte-Project?color=2a9d8f" alt="License"></a>
 </p>
 
@@ -13,7 +13,7 @@
 
 **Valyte** is a CLI tool for VASP workflows — pre-processing and post-processing — built for clean, publication-quality output.
 
-**[Full Documentation → valyte.readthedocs.io](https://valyte.readthedocs.io/)**
+**[Full Documentation → valyte-project.readthedocs.io](https://valyte-project.readthedocs.io/en/latest/)**
 
 ---
 
