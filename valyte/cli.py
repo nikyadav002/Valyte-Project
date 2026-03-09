@@ -17,6 +17,7 @@ from valyte.dos_plot import load_dos, plot_dos
 from valyte.kpoints import generate_kpoints_interactive
 from valyte.potcar import generate_potcar
 from valyte.ipr import run_ipr_interactive
+from valyte.geoopt import check_convergence
 
 
 def _normalize_element(symbol: str) -> str:
@@ -128,6 +129,11 @@ def main():
     # IPR
     subparsers.add_parser("ipr", help="Compute IPR from PROCAR")
 
+    # Force check
+    force_check_parser = subparsers.add_parser("force-check", help="Geometry optimization force/energy convergence check")
+    force_check_parser.add_argument("outcar", nargs="?", default="OUTCAR", help="Path to OUTCAR file (default: OUTCAR)")
+    force_check_parser.add_argument("--ediffg", type=float, default=None, help="Force convergence threshold in eV/Å (e.g. 0.02)")
+
     args = parser.parse_args()
 
     if args.command == "dos":
@@ -191,6 +197,16 @@ def main():
     elif args.command == "ipr":
         try:
             run_ipr_interactive()
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.command == "force-check":
+        try:
+            check_convergence(
+                outcar_path=args.outcar,
+                ediffg=args.ediffg,
+            )
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)
