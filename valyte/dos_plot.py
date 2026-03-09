@@ -164,6 +164,46 @@ def get_pdos(dos, elements=None):
     return pdos
 
 
+def _save_dos_dat(dos, pdos, items_to_plot, filepath):
+    """Save DOS data (energies, total, and PDOS) to a text file."""
+    is_spin_polarized = Spin.down in dos.densities
+    energies = dos.energies
+
+    cols = [energies, dos.spin_up]
+    col_labels = ["Energy(eV)", "Total_up"]
+
+    if is_spin_polarized:
+        cols.append(dos.spin_down)
+        col_labels.append("Total_dn")
+
+    for el, orb in items_to_plot:
+        if el not in pdos:
+            continue
+        if orb == "total":
+            y_up = sum(o.get(Spin.up, np.zeros_like(energies)) for o in pdos[el].values())
+            label = el
+        else:
+            if orb not in pdos[el]:
+                continue
+            y_up = pdos[el][orb].get(Spin.up, np.zeros_like(energies))
+            label = f"{el}({orb})"
+
+        cols.append(y_up)
+        col_labels.append(f"{label}_up")
+
+        if is_spin_polarized:
+            if orb == "total":
+                y_dn = sum(o.get(Spin.down, np.zeros_like(energies)) for o in pdos[el].values())
+            else:
+                y_dn = pdos[el][orb].get(Spin.down, np.zeros_like(energies))
+            cols.append(y_dn)
+            col_labels.append(f"{label}_dn")
+
+    header = "  ".join(col_labels)
+    np.savetxt(filepath, np.column_stack(cols), header=header, fmt="%.6f")
+    print(f"Saved data: {filepath}")
+
+
 def plot_dos(
     dos,
     pdos,
@@ -179,6 +219,7 @@ def plot_dos(
     plotting_config=None,
     legend_cutoff=0.10,
     scale_factor=1.0,
+    save_data=False,
 ):
     """Plot total and projected DOS with the Valyte style."""
 
@@ -378,3 +419,6 @@ def plot_dos(
     plt.tight_layout(pad=0.4)
     plt.savefig(out, dpi=dpi)
     plt.close(fig)
+
+    if save_data:
+        _save_dos_dat(dos, pdos, items_to_plot, "valyte_dos.dat")

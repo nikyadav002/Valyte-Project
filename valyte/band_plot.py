@@ -105,8 +105,48 @@ def _draw_triangle_legend(ax, tricolors, tri_labels):
                 ha="left", va="top", fontsize=7, fontweight="bold", color=tricolors[2])
 
 
+def _save_band_dat(distances, energies, ticks, filepath):
+    """Save band structure data (k-distances and energies) to a text file."""
+    nbranches = len(distances)
+    all_d = np.concatenate(distances)
+
+    if isinstance(energies, dict):
+        spins = list(energies.keys())
+        nbands = len(energies[spins[0]][0])
+        all_e = {}
+        for spin in spins:
+            all_e[spin] = np.array([
+                np.concatenate([np.array(energies[spin][i][ib]) for i in range(nbranches)])
+                for ib in range(nbands)
+            ])
+    else:
+        spins = list(energies[0].keys())
+        nbands = len(energies[0][spins[0]])
+        all_e = {}
+        for spin in spins:
+            all_e[spin] = np.array([
+                np.concatenate([np.array(energies[i][spin][ib]) for i in range(nbranches)])
+                for ib in range(nbands)
+            ])
+
+    label_info = ", ".join(
+        f"{l}={d:.4f}" for l, d in zip(ticks["label"], ticks["distance"]) if l
+    )
+    spin_tag = {spins[0]: ""} if len(spins) == 1 else {spins[0]: "_up", spins[1]: "_dn"}
+    col_labels = ["k-dist"] + [
+        f"band_{ib+1}{spin_tag[sp]}"
+        for sp in spins for ib in range(nbands)
+    ]
+    header = f"K-point labels: {label_info}\n" + "  ".join(col_labels)
+
+    cols = [all_d] + [all_e[sp][ib] for sp in spins for ib in range(nbands)]
+    np.savetxt(filepath, np.column_stack(cols), header=header, fmt="%.6f")
+    print(f"Saved data: {filepath}")
+
+
 def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png",
-                        ylim=None, figsize=(4, 4), dpi=400, font="Arial"):
+                        ylim=None, figsize=(4, 4), dpi=400, font="Arial",
+                        save_data=False):
     """Plot the electronic band structure from a VASP vasprun.xml."""
 
     if os.path.isdir(vasprun_path):
@@ -182,6 +222,9 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
     plt.savefig(output, dpi=dpi)
     plt.close(fig)
 
+    if save_data:
+        _save_band_dat(distances, energies, ticks, "valyte_band.dat")
+
 
 def plot_orbital_band_structure(
     vasprun_path,
@@ -195,6 +238,7 @@ def plot_orbital_band_structure(
     dpi=400,
     lw=2.0,
     font="Arial",
+    save_data=False,
 ):
     """Plot orbital-resolved band structure with a tricolor RGB map.
 
@@ -333,3 +377,6 @@ def plot_orbital_band_structure(
     plt.savefig(output, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {output}")
+
+    if save_data:
+        _save_band_dat(distances, energies, ticks, "valyte_band.dat")

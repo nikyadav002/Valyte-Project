@@ -71,6 +71,7 @@ def main():
     dos_parser.add_argument("--pdos", action="store_true", help="Plot only Projected DOS (hide Total DOS)")
     dos_parser.add_argument("--legend-cutoff", type=float, default=0.10, help="Threshold for legend visibility (0.0-1.0)")
     dos_parser.add_argument("--font", default="Arial", help="Font family")
+    dos_parser.add_argument("--save-data", action="store_true", help="Save DOS data to valyte_dos.dat")
 
     # Supercell
     supercell_parser = subparsers.add_parser("supercell", help="Create a supercell")
@@ -105,6 +106,7 @@ def main():
         help="Labels for the triangle legend (defaults to the spec strings)",
     )
     band_parser.add_argument("--lw", type=float, default=2.0, help="Line width for tricolor bands (default: 2.0)")
+    band_parser.add_argument("--save-data", action="store_true", help="Save band data to valyte_band.dat")
 
     # Band KPOINTS generation
     kpt_gen_parser = band_subparsers.add_parser("kpt-gen", help="Generate KPOINTS for band structure")
@@ -149,6 +151,7 @@ def main():
                 plotting_config=plotting_config,
                 legend_cutoff=args.legend_cutoff,
                 scale_factor=args.scale,
+                save_data=args.save_data,
             )
         except Exception as e:
             print(f"Error: {e}")
@@ -231,6 +234,7 @@ def main():
                         tri_labels=tri_labels,
                         lw=args.lw,
                         font=args.font,
+                        save_data=args.save_data,
                     )
                 else:
                     plot_band_structure(
@@ -239,6 +243,7 @@ def main():
                         output=args.output,
                         ylim=tuple(args.ylim) if args.ylim else None,
                         font=args.font,
+                        save_data=args.save_data,
                     )
             except Exception:
                 import traceback
