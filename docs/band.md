@@ -69,6 +69,7 @@ valyte band [options]
 | `--ylim` | `-4 4` | Energy window in eV, e.g. `--ylim -3 3` |
 | `-o`, `--output` | `valyte_band.png` | Output filename |
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
+| `--save-data` | off | Save band data to `valyte_band.dat` |
 
 ```bash
 # Basic plot from current directory
@@ -79,7 +80,26 @@ valyte band --ylim -3 3 -o my_bands.png
 
 # Explicit paths
 valyte band --vasprun ./band_run --kpoints ./band_run/KPOINTS --ylim -4 4
+
+# Save raw data alongside the plot
+valyte band --ylim -3 3 --save-data
 ```
+
+### Exported data format (`valyte_band.dat`)
+
+A plain-text, whitespace-delimited file with one row per k-point:
+
+```
+# K-point labels: G=0.0000, X=0.3124, M=0.5412, G=0.8660
+# k-dist  band_1  band_2  band_3  ...
+0.000000  -5.123  -3.456  -1.234  ...
+...
+```
+
+- **`k-dist`** — cumulative k-path distance (same x-axis as the plot)
+- **`band_N`** — energy in eV relative to the VBM (E = 0)
+- For spin-polarized calculations columns are labeled `band_N_up` / `band_N_dn`
+- The header comment lists every high-symmetry label and its k-distance position
 
 ---
 
@@ -111,6 +131,7 @@ valyte band --tricolor SPEC1 SPEC2 SPEC3 [options]
 | `--tri-labels` | spec strings | Labels shown at the triangle legend vertices |
 | `--lw` | `2.0` | Band line width |
 | `--ylim`, `-o`, `--font` | — | Same as standard band options |
+| `--save-data` | off | Save band data to `valyte_band.dat` (same format as standard plot) |
 
 ### How the colors work
 

@@ -23,6 +23,7 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 | `--legend-cutoff` | `0.10` | Hide the legend if the max PDOS contribution is below this fraction of total |
 | `-o`, `--output` | `valyte_dos.png` | Output filename |
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
+| `--save-data` | off | Save DOS data to `valyte_dos.dat` |
 
 ---
 
@@ -62,7 +63,26 @@ valyte dos --pdos -e Fe O
 
 # Scale down a very tall DOS
 valyte dos --scale 3 --ylim 0 10
+
+# Save raw data alongside the plot
+valyte dos -e Fe O --save-data
 ```
+
+### Exported data format (`valyte_dos.dat`)
+
+A plain-text, whitespace-delimited file with one row per energy point:
+
+```
+# Energy(eV)  Total_up  Fe_up  O_up  ...
+-6.000000  0.000000  0.000000  0.000000  ...
+...
+```
+
+- **`Energy(eV)`** — energy relative to the VBM (E = 0)
+- **`Total_up`** — total DOS spin-up channel
+- **`Total_dn`** — total DOS spin-down channel (spin-polarized calculations only)
+- Remaining columns are one per plotted element/orbital (e.g. `Fe_up`, `Fe(d)_up`) matching exactly what is shown in the plot
+- Spin-down columns are labeled `_dn` and appear immediately after their `_up` counterpart
 
 ---
 

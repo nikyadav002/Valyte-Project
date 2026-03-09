@@ -140,9 +140,11 @@ valyte band [options]
 | `--ylim` | `-4 4` | Energy window |
 | `-o`, `--output` | `valyte_band.png` | Output filename |
 | `--font` | `Arial` | Font: `Arial`, `Helvetica`, `Times New Roman` |
+| `--save-data` | off | Save band data to `valyte_band.dat` |
 
 ```bash
 valyte band --ylim -3 3 -o my_bands.png
+valyte band --ylim -3 3 --save-data
 ```
 
 </details>
@@ -172,6 +174,7 @@ valyte band --tricolor SPEC1 SPEC2 SPEC3 [options]
 | `--tricolors` | `#e74c3c #2ecc71 #3498db` | 3 colors (red, green, blue) |
 | `--tri-labels` | spec strings | 3 labels for the triangle legend |
 | `--lw` | `2.0` | Line width |
+| `--save-data` | off | Save band data to `valyte_band.dat` |
 
 > **Requirement:** VASP must be run with `LORBIT = 11` (or ≥ 10) to write projected eigenvalues into `vasprun.xml`.
 
@@ -210,6 +213,7 @@ valyte dos [path/to/vasprun.xml] [options]
 | `--legend-cutoff` | `0.10` | Hide legend if PDOS fraction < threshold |
 | `-o`, `--output` | `valyte_dos.png` | Output filename |
 | `--font` | `Arial` | Font family |
+| `--save-data` | off | Save DOS data to `valyte_dos.dat` |
 
 ```bash
 valyte dos                            # All orbitals, all elements
@@ -217,6 +221,7 @@ valyte dos -e Fe O                    # Total PDOS for Fe and O
 valyte dos -e "Fe(d)" "O(p)"          # Specific orbitals
 valyte dos -e Fe "Fe(d)"              # Fe total + Fe d-orbital
 valyte dos ./run --xlim -5 5 --fermi -o my_dos.png
+valyte dos -e Fe O --save-data        # Save data to valyte_dos.dat
 ```
 
 </details>
