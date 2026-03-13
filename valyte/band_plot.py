@@ -6,6 +6,7 @@ mpl.use("agg")
 mpl.rcParams["axes.unicode_minus"] = False
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.lines as mlines
 from matplotlib.collections import LineCollection
 from matplotlib.colors import to_rgb
 from pymatgen.io.vasp import BSVasprun
@@ -146,7 +147,7 @@ def _save_band_dat(distances, energies, ticks, filepath):
 
 def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png",
                         ylim=None, figsize=(4, 4), dpi=400, font="Arial",
-                        save_data=False):
+                        save_data=False, spin_resolved=False):
     """Plot the electronic band structure from a VASP vasprun.xml."""
 
     if os.path.isdir(vasprun_path):
@@ -184,19 +185,54 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
     color_vb = "#8e44ad"
     color_cb = "#2a9d8f"
 
+    # Determine spin keys in consistent order
+    if isinstance(energies, dict):
+        spin_list = list(energies.keys())
+    else:
+        spin_list = list(energies[0].keys())
+
+    # Validate --spin-resolved: need at least two spin channels
+    if spin_resolved and len(spin_list) < 2:
+        print("Warning: Only one spin channel found in this calculation; "
+              "--spin-resolved has no effect.")
+        spin_resolved = False
+
+    spin_styles = {}
+    if spin_resolved:
+        spin_styles = {
+            spin_list[0]: {"color": "#3498db", "ls": "-"},   # spin up
+            spin_list[1]: {"color": "#e74c3c", "ls": "--"},  # spin down
+        }
+
     for i in range(len(distances)):
         d = distances[i]
 
         if isinstance(energies, dict):
             for spin in energies:
                 for band in energies[spin][i]:
-                    c = color_vb if np.mean(band) <= 0 else color_cb
-                    ax.plot(d, band, color=c, lw=1.5, alpha=1.0)
+                    if spin_resolved:
+                        style = spin_styles[spin]
+                        ax.plot(d, band, color=style["color"], ls=style["ls"],
+                                lw=1.5, alpha=1.0)
+                    else:
+                        c = color_vb if np.mean(band) <= 0 else color_cb
+                        ax.plot(d, band, color=c, lw=1.5, alpha=1.0)
         else:
             for spin in energies[i]:
                 for band in energies[i][spin]:
-                    c = color_vb if np.mean(band) <= 0 else color_cb
-                    ax.plot(d, band, color=c, lw=1.5, alpha=1.0)
+                    if spin_resolved:
+                        style = spin_styles[spin]
+                        ax.plot(d, band, color=style["color"], ls=style["ls"],
+                                lw=1.5, alpha=1.0)
+                    else:
+                        c = color_vb if np.mean(band) <= 0 else color_cb
+                        ax.plot(d, band, color=c, lw=1.5, alpha=1.0)
+
+    if spin_resolved:
+        up_line = mlines.Line2D([], [], color="#3498db", lw=1.5, ls="-", label="Spin up")
+        dn_line = mlines.Line2D([], [], color="#e74c3c", lw=1.5, ls="--", label="Spin down")
+        ax.legend(handles=[up_line, dn_line], fontsize=10, frameon=True,
+                  loc="upper right")
 
     ax.set_xticks(ticks["distance"])
     clean_labels = [(l or "").replace("$\\mid$", "|") for l in ticks["label"]]
@@ -372,6 +408,157 @@ def plot_orbital_band_structure(
     ax.set_xlim(distances[0][0], distances[-1][-1])
 
     _draw_triangle_legend(ax, tricolors, tri_labels)
+
+    plt.tight_layout()
+    plt.savefig(output, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved: {output}")
+
+    if save_data:
+        _save_band_dat(distances, energies, ticks, "valyte_band.dat")
+
+
+def plot_spin_texture_band_structure(
+    vasprun_path,
+    kpoints_path=None,
+    output="valyte_band_spin_texture.png",
+    ylim=None,
+    figsize=(4, 4),
+    dpi=400,
+    font="Arial",
+    save_data=False,
+    spin_component="sz",
+    cmap="seismic",
+    lw=1.5,
+):
+    """Plot non-collinear band structure colored by a spin texture component (Sx, Sy, or Sz).
+
+    Each band segment is colored by the expectation value of the chosen spin
+    component summed over all atoms and orbitals, using a diverging colormap
+    centered at zero.
+
+    Requires a VASP non-collinear calculation (LSORBIT = .TRUE. or
+    LNONCOLLINEAR = .TRUE.) with LORBIT >= 11.
+
+    Parameters
+    ----------
+    spin_component : {'sx', 'sy', 'sz'}
+        Spin magnetization component to visualize.
+    cmap : str
+        Diverging colormap name (default: 'seismic').
+    lw : float
+        Band line width.
+    """
+    if os.path.isdir(vasprun_path):
+        vasprun_path = os.path.join(vasprun_path, "vasprun.xml")
+
+    font_map = {
+        "arial": "Arial",
+        "helvetica": "Helvetica",
+        "times": "Times New Roman",
+        "times new roman": "Times New Roman",
+    }
+    font = font_map.get(font.lower(), "Arial")
+    mpl.rcParams["font.family"] = font
+    mpl.rcParams["axes.linewidth"] = 1.4
+    mpl.rcParams["font.weight"] = "bold"
+    mpl.rcParams["font.size"] = 14
+    mpl.rcParams["xtick.major.width"] = 1.2
+    mpl.rcParams["ytick.major.width"] = 1.2
+
+    try:
+        vr = BSVasprun(vasprun_path, parse_projected_eigen=True)
+        bs = vr.get_band_structure(kpoints_filename=kpoints_path, line_mode=True)
+    except Exception as e:
+        raise ValueError(f"Failed to load band structure: {e}")
+
+    # projected_magnetisation shape: (nkpoints, nbands, natoms, norbitals, 3)
+    # last axis → [0]=Sx, [1]=Sy, [2]=Sz  (British spelling in pymatgen)
+    mag = getattr(vr, "projected_magnetisation", None)
+    if mag is None:
+        raise ValueError(
+            "No spin magnetization data found in vasprun.xml.\n"
+            "Spin texture requires a non-collinear VASP calculation with "
+            "LSORBIT = .TRUE. (or LNONCOLLINEAR = .TRUE.) and LORBIT >= 11."
+        )
+
+    comp_idx = {"sx": 0, "sy": 1, "sz": 2}[spin_component.lower()]
+    mag = np.asarray(mag)  # (nkpts, nbands, natoms, norbitals, 3)
+    if mag.ndim != 5 or mag.shape[-1] != 3:
+        raise ValueError(
+            f"Unexpected projected_magnetisation shape {mag.shape}. "
+            "Expected (nkpts, nbands, natoms, norbitals, 3)."
+        )
+    # Sum over atoms and orbitals → (nkpts, nbands)
+    spin_texture = mag[:, :, :, :, comp_idx].sum(axis=(2, 3))
+
+    bs_plotter = BSPlotter(bs)
+    data = bs_plotter.bs_plot_data(zero_to_efermi=True)
+
+    distances = data["distances"]
+    energies = data["energy"]
+    ticks = data["ticks"]
+
+    # Energy accessor — non-collinear has a single spin key
+    if isinstance(energies, dict):
+        spin_key = list(energies.keys())[0]
+        def get_energy(branch_i, band_i):
+            return energies[spin_key][branch_i][band_i]
+    else:
+        spin_key = list(energies[0].keys())[0]
+        def get_energy(branch_i, band_i):
+            return energies[branch_i][spin_key][band_i]
+
+    # Symmetric color limits centered at zero
+    clim = max(abs(float(spin_texture.max())), abs(float(spin_texture.min())))
+    if clim < 1e-9:
+        clim = 1.0
+    norm = mpl.colors.Normalize(vmin=-clim, vmax=clim)
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    for branch_i, branch in enumerate(bs.branches):
+        kpt_start = branch["start_index"]
+        kpt_end = branch["end_index"] + 1
+        d = distances[branch_i]
+
+        for ib in range(bs.nb_bands):
+            e = np.array(get_energy(branch_i, ib))
+            st = spin_texture[kpt_start:kpt_end, ib]
+
+            pts = np.array([d, e]).T.reshape(-1, 1, 2)
+            segs = np.concatenate([pts[:-1], pts[1:]], axis=1)
+            seg_values = (st[:-1] + st[1:]) / 2.0
+
+            lc = LineCollection(segs, cmap=cmap, norm=norm, linewidths=lw, alpha=0.9)
+            lc.set_array(seg_values)
+            ax.add_collection(lc)
+
+    comp_label = {"sx": r"$S_x$", "sy": r"$S_y$", "sz": r"$S_z$"}[spin_component.lower()]
+    sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=ax, pad=0.02, shrink=0.8)
+    cbar.set_label(comp_label, fontsize=13, fontweight="bold")
+    cbar.ax.tick_params(labelsize=10)
+
+    ax.set_xticks(ticks["distance"])
+    clean_labels = [(l or "").replace("$\\mid$", "|") for l in ticks["label"]]
+    ax.set_xticklabels(clean_labels, fontsize=14, fontweight="bold")
+
+    for d in ticks["distance"]:
+        ax.axvline(d, color="k", lw=0.8, ls="-", alpha=0.3)
+
+    ax.axhline(0, color="k", lw=0.8, ls="--", alpha=0.5)
+
+    ax.set_ylabel("Energy (eV)", fontsize=16, fontweight="bold", labelpad=8)
+    if ylim:
+        ax.set_ylim(ylim)
+        ax.set_yticks(np.arange(np.ceil(ylim[0]), np.floor(ylim[1]) + 1, 1))
+    else:
+        ax.set_ylim(-4, 4)
+        ax.set_yticks(np.arange(-4, 5, 1))
+
+    ax.set_xlim(distances[0][0], distances[-1][-1])
 
     plt.tight_layout()
     plt.savefig(output, dpi=dpi, bbox_inches="tight")

@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pymatgen")
 
 from valyte.supercell import create_supercell
 from valyte.band import generate_band_kpoints
-from valyte.band_plot import plot_band_structure, plot_orbital_band_structure
+from valyte.band_plot import plot_band_structure, plot_orbital_band_structure, plot_spin_texture_band_structure
 from valyte.dos_plot import load_dos, plot_dos
 from valyte.kpoints import generate_kpoints_interactive
 from valyte.potcar import generate_potcar
@@ -112,6 +112,20 @@ def main():
     band_parser.add_argument("--width", type=float, default=4.0, help="Plot width in inches (default: 4)")
     band_parser.add_argument("--height", type=float, default=4.0, help="Plot height in inches (default: 4)")
     band_parser.add_argument("--save-data", action="store_true", help="Save band data to valyte_band.dat")
+    band_parser.add_argument(
+        "--spin-resolved", action="store_true",
+        help="Plot spin-up and spin-down channels in distinct colors (blue/red). "
+             "Only effective for spin-polarized calculations.",
+    )
+    band_parser.add_argument(
+        "--spin-texture", choices=["sx", "sy", "sz"], metavar="COMPONENT",
+        help="Plot non-collinear spin texture colored by the chosen component "
+             "(sx, sy, or sz). Requires LSORBIT=.TRUE. and LORBIT>=11.",
+    )
+    band_parser.add_argument(
+        "--spin-cmap", default="seismic",
+        help="Colormap for --spin-texture (default: seismic).",
+    )
 
     # Band KPOINTS generation
     kpt_gen_parser = band_subparsers.add_parser("kpt-gen", help="Generate KPOINTS for band structure")
@@ -242,7 +256,21 @@ def main():
                     if os.path.exists(potential_kpoints):
                         kpoints_path = potential_kpoints
 
-                if args.tricolor:
+                if args.spin_texture:
+                    output = args.output if args.output != "valyte_band.png" \
+                        else f"valyte_band_{args.spin_texture}.png"
+                    plot_spin_texture_band_structure(
+                        vasprun_path=target_path,
+                        kpoints_path=kpoints_path,
+                        output=output,
+                        ylim=tuple(args.ylim) if args.ylim else None,
+                        figsize=(args.width, args.height),
+                        font=args.font,
+                        save_data=args.save_data,
+                        spin_component=args.spin_texture,
+                        cmap=args.spin_cmap,
+                    )
+                elif args.tricolor:
                     tri_labels = args.tri_labels if args.tri_labels else list(args.tricolor)
                     output = args.output if args.output != "valyte_band.png" else "valyte_band_orbital.png"
                     plot_orbital_band_structure(
@@ -267,6 +295,7 @@ def main():
                         figsize=(args.width, args.height),
                         font=args.font,
                         save_data=args.save_data,
+                        spin_resolved=args.spin_resolved,
                     )
             except Exception:
                 import traceback

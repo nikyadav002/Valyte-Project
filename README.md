@@ -35,6 +35,8 @@
 | `valyte dos` | Total and projected DOS with orbital resolution and gradient fills |
 | `valyte band` | Color-coded band structure with VBM aligned to 0 eV |
 | `valyte band --tricolor` | **Orbital-resolved tricolor band structure** |
+| `valyte band --spin-resolved` | **Spin-polarized band structure** — spin-up (blue) and spin-down (red) channels |
+| `valyte band --spin-texture` | **Non-collinear spin texture** — bands colored by Sₓ, S_y, or S_z expectation value |
 | `valyte ipr` | Inverse Participation Ratio from PROCAR |
 
 ---
@@ -189,6 +191,66 @@ valyte band --tricolor Mo S Se \
 
 # Element + orbital resolved
 valyte band --tricolor Fe:d O:p s --ylim -5 5 -o orbital_band.png
+```
+
+</details>
+
+<details>
+<summary><strong>Band Structure — Spin-resolved plot (collinear)</strong></summary>
+
+<br>
+
+For spin-polarized calculations, plot spin-up and spin-down channels in distinct colors on the same axes. Spin-up bands are drawn as solid blue lines, spin-down as dashed red lines, with an automatic legend.
+
+```bash
+valyte band --spin-resolved [options]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `--spin-resolved` | off | Enable spin-resolved mode |
+| `--ylim` | `-4 4` | Energy window |
+| `-o`, `--output` | `valyte_band.png` | Output filename |
+
+> Silently falls back to the standard plot if the calculation has only one spin channel (non-magnetic).
+
+```bash
+valyte band --spin-resolved
+valyte band --spin-resolved --ylim -3 3 -o spin_band.png
+```
+
+</details>
+
+<details>
+<summary><strong>Band Structure — Non-collinear spin texture</strong></summary>
+
+<br>
+
+For non-collinear (SOC / LSORBIT) calculations, color each band segment by the expectation value of a chosen spin component (Sₓ, S_y, or S_z), summed over all atoms and orbitals. A diverging colormap centered at zero reveals the spin polarization direction along the k-path.
+
+```bash
+valyte band --spin-texture {sx,sy,sz} [options]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `--spin-texture` | — | Component to visualize: `sx`, `sy`, or `sz` |
+| `--spin-cmap` | `seismic` | Diverging colormap (any matplotlib name) |
+| `--ylim` | `-4 4` | Energy window |
+| `-o`, `--output` | `valyte_band_sz.png` | Output filename (auto-named by component) |
+
+> **Requirement:** VASP must be run with `LSORBIT = .TRUE.` (or `LNONCOLLINEAR = .TRUE.`) and `LORBIT >= 11`.
+
+```bash
+# Out-of-plane spin texture (most common)
+valyte band --spin-texture sz
+
+# In-plane components
+valyte band --spin-texture sx
+valyte band --spin-texture sy
+
+# Custom colormap and energy window
+valyte band --spin-texture sz --spin-cmap RdBu_r --ylim -2 2
 ```
 
 </details>

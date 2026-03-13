@@ -1,12 +1,14 @@
 # Band Structure
 
-Valyte provides three band structure sub-commands:
+Valyte provides several band structure modes:
 
-| Sub-command | Description |
+| Sub-command / flag | Description |
 |---|---|
 | `valyte band kpt-gen` | Generate KPOINTS with high-symmetry paths |
 | `valyte band` | Standard color-coded band structure plot |
 | `valyte band --tricolor` | Orbital-resolved tricolor band structure |
+| `valyte band --spin-resolved` | Spin-polarized plot — spin-up (blue) and spin-down (red) |
+| `valyte band --spin-texture` | Non-collinear spin texture colored by Sₓ, S_y, or S_z |
 
 ---
 
@@ -162,4 +164,101 @@ valyte band --tricolor Fe:d O:p s --ylim -5 5 -o orbital_band.png
 
 # Custom line width and font
 valyte band --tricolor s p d --lw 2.5 --font Helvetica --ylim -4 4
+```
+
+---
+
+## 4. Spin-Resolved Band Structure (collinear)
+
+For spin-polarized calculations, plot both spin channels on the same axes with distinct colors:
+
+- **Spin-up** — solid blue line
+- **Spin-down** — dashed red line
+
+A legend is added automatically. If the calculation is non-magnetic (single spin channel), Valyte prints a warning and falls back to the standard plot.
+
+```bash
+valyte band --spin-resolved [options]
+```
+
+### Options
+
+| Option | Default | Description |
+|---|---|---|
+| `--spin-resolved` | off | Enable spin-resolved mode |
+| `--vasprun` | `.` | Path to `vasprun.xml` or parent directory |
+| `--kpoints` | auto-detected | Path to `KPOINTS` file (for labels) |
+| `--ylim` | `-4 4` | Energy window in eV |
+| `-o`, `--output` | `valyte_band.png` | Output filename |
+| `--font` | `Arial` | Font family |
+| `--width` / `--height` | `4.0` | Figure dimensions in inches |
+| `--save-data` | off | Save band data to `valyte_band.dat` |
+
+### Examples
+
+```bash
+# Basic spin-resolved plot
+valyte band --spin-resolved
+
+# Custom energy window
+valyte band --spin-resolved --ylim -3 3
+
+# With explicit path and output
+valyte band --spin-resolved --vasprun ./band_run --ylim -4 4 -o spin_bands.png
+```
+
+---
+
+## 5. Non-Collinear Spin Texture
+
+For non-collinear calculations (spin-orbit coupling or non-collinear magnetism), color each band segment by the expectation value of a spin component. The color encodes the spin polarization direction along the k-path using a diverging colormap centered at zero.
+
+```bash
+valyte band --spin-texture {sx,sy,sz} [options]
+```
+
+!!! important "VASP requirements"
+    - `LSORBIT = .TRUE.` or `LNONCOLLINEAR = .TRUE.` in `INCAR`
+    - `LORBIT >= 11` to write projected eigenvalues and magnetization into `vasprun.xml`
+
+### Options
+
+| Option | Default | Description |
+|---|---|---|
+| `--spin-texture` | — | Component: `sx`, `sy`, or `sz` — **required** to activate this mode |
+| `--spin-cmap` | `seismic` | Diverging colormap (any matplotlib colormap name) |
+| `--vasprun` | `.` | Path to `vasprun.xml` or parent directory |
+| `--kpoints` | auto-detected | Path to `KPOINTS` file (for labels) |
+| `--ylim` | `-4 4` | Energy window in eV |
+| `-o`, `--output` | `valyte_band_sz.png` | Output filename (auto-named by component if not set) |
+| `--font` | `Arial` | Font family |
+| `--width` / `--height` | `4.0` | Figure dimensions in inches |
+| `--lw` | `2.0` | Band line width |
+| `--save-data` | off | Save band energies to `valyte_band.dat` |
+
+### How it works
+
+The `projected_magnetisation` array from `vasprun.xml` has shape `(nkpts, nbands, natoms, norbitals, 3)`. The chosen component (index 0, 1, or 2 for x, y, z) is summed over all atoms and orbitals to give a scalar spin texture value per k-point per band:
+
+$$\langle S_\alpha \rangle (k, n) = \sum_{i,m} M_{\alpha,km,in}$$
+
+This is mapped to color via a diverging colormap (positive = one color, negative = the opposite, zero = white).
+
+### Examples
+
+```bash
+# Out-of-plane spin texture (most common for Rashba / topological systems)
+valyte band --spin-texture sz
+
+# In-plane components
+valyte band --spin-texture sx
+valyte band --spin-texture sy
+
+# Custom colormap and energy window
+valyte band --spin-texture sz --spin-cmap RdBu_r --ylim -2 2
+
+# All three components in one go
+for comp in sx sy sz; do
+    valyte band --spin-texture $comp --ylim -2 2
+done
 ```
