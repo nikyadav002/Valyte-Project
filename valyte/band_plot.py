@@ -105,7 +105,7 @@ def _get_orbital_weights(bs, spec, structure):
 
 
 def _draw_triangle_legend(ax, tricolors, tri_labels):
-    """Draw a ternary color triangle as an inset in the lower-right corner."""
+    """Draw a compact ternary color triangle as an inset in the upper-right corner."""
     color_arr = np.array([to_rgb(c) for c in tricolors])
 
     # Equilateral triangle vertices: top, bottom-left, bottom-right
@@ -124,24 +124,24 @@ def _draw_triangle_legend(ax, tricolors, tri_labels):
             ys.append(w0 * V[0, 1] + w1 * V[1, 1] + w2 * V[2, 1])
             cs.append(np.clip(w0 * color_arr[0] + w1 * color_arr[1] + w2 * color_arr[2], 0, 1))
 
-    ax_tri = ax.inset_axes([0.70, 0.01, 0.28, 0.28])
-    ax_tri.scatter(xs, ys, c=cs, s=4, linewidths=0, rasterized=True)
+    ax_tri = ax.inset_axes([0.78, 0.78, 0.20, 0.20])
+    ax_tri.scatter(xs, ys, c=cs, s=3, linewidths=0, rasterized=True)
 
-    tri = mpatches.Polygon(V, fill=False, edgecolor="k", linewidth=0.8)
+    tri = mpatches.Polygon(V, fill=False, edgecolor="k", linewidth=0.6)
     ax_tri.add_patch(tri)
 
-    ax_tri.set_xlim(-0.18, 1.18)
-    ax_tri.set_ylim(-0.18, np.sqrt(3) / 2 + 0.12)
+    ax_tri.set_xlim(-0.22, 1.22)
+    ax_tri.set_ylim(-0.22, np.sqrt(3) / 2 + 0.15)
     ax_tri.set_aspect("equal")
     ax_tri.axis("off")
 
-    pad = 0.10
+    pad = 0.12
     ax_tri.text(V[0, 0], V[0, 1] + pad, tri_labels[0],
-                ha="center", va="bottom", fontsize=7, fontweight="bold", color=tricolors[0])
-    ax_tri.text(V[1, 0] - pad, V[1, 1] - pad * 0.6, tri_labels[1],
-                ha="right", va="top", fontsize=7, fontweight="bold", color=tricolors[1])
-    ax_tri.text(V[2, 0] + pad, V[2, 1] - pad * 0.6, tri_labels[2],
-                ha="left", va="top", fontsize=7, fontweight="bold", color=tricolors[2])
+                ha="center", va="bottom", fontsize=6, fontweight="bold", color=tricolors[0])
+    ax_tri.text(V[1, 0] - pad, V[1, 1] - pad * 0.5, tri_labels[1],
+                ha="right", va="top", fontsize=6, fontweight="bold", color=tricolors[1])
+    ax_tri.text(V[2, 0] + pad, V[2, 1] - pad * 0.5, tri_labels[2],
+                ha="left", va="top", fontsize=6, fontweight="bold", color=tricolors[2])
 
 
 def _save_band_dat(distances, energies, ticks, filepath):
@@ -349,7 +349,7 @@ def plot_orbital_band_structure(
     if tricolor is None:
         tricolor = ["s", "p", "d"]
     if tricolors is None:
-        tricolors = ["#e74c3c", "#2ecc71", "#3498db"]
+        tricolors = ["#d62828", "#2a9d8f", "#4361ee"]
     if tri_labels is None:
         tri_labels = list(tricolor)
 

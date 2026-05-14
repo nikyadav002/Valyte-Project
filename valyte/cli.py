@@ -101,8 +101,8 @@ def main():
     )
     band_parser.add_argument(
         "--tricolors", nargs=3, metavar=("COLOR1", "COLOR2", "COLOR3"),
-        default=["#e74c3c", "#2ecc71", "#3498db"],
-        help="Colors for the 3 tricolor specs (default: red green blue)",
+        default=["#d62828", "#2a9d8f", "#4361ee"],
+        help="Colors for the 3 tricolor specs (default: crimson teal blue)",
     )
     band_parser.add_argument(
         "--tri-labels", nargs=3, metavar=("LBL1", "LBL2", "LBL3"),
