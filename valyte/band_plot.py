@@ -50,20 +50,40 @@ def _get_orbital_weights(bs, spec, structure):
 
     # Detect the correct axis ordering.
     # The projections array is 4-D but the axis order varies across pymatgen
-    # versions and LORBIT settings.  We identify the ion axis by matching
-    # against the number of ions in the structure.
-    n_ions_expected = len(structure)
-
+    # versions and LORBIT settings.  We identify each axis by matching the
+    # dimension sizes against known values from the band-structure object.
+    # Target ordering: (nkpts, nbands, nions, norbitals)
     if proj.ndim == 4:
-        if proj.shape[2] == n_ions_expected:
-            # Standard: (kpts/bands, bands/kpts, nions, norbitals)
-            pass
-        elif proj.shape[3] == n_ions_expected and proj.shape[2] != n_ions_expected:
-            # Ions and orbitals axes are swapped → transpose last two dims
-            proj = proj.transpose(0, 1, 3, 2)
-        elif proj.shape[0] == n_ions_expected:
-            # (nions, ..., ..., ...) – unusual; move ion axis to position 2
-            proj = np.moveaxis(proj, 0, 2)
+        n_kpts_expected = len(bs.kpoints)
+        n_bands_expected = bs.nb_bands
+        n_ions_expected = len(structure)
+
+        targets = [
+            (n_kpts_expected, 0),   # kpts  → axis 0
+            (n_bands_expected, 1),  # bands → axis 1
+            (n_ions_expected, 2),   # ions  → axis 2
+        ]
+        shape = proj.shape
+        perm = [None] * 4
+        used = set()
+
+        # Greedily assign axes whose expected size is most unique first
+        # (ions is usually the most distinct dimension).
+        for expected_size, target_pos in sorted(targets, key=lambda t: sum(1 for s in shape if s == t[0])):
+            for i in range(4):
+                if i not in used and shape[i] == expected_size:
+                    perm[target_pos] = i
+                    used.add(i)
+                    break
+
+        # Remaining un-matched axis is norbitals
+        for i in range(4):
+            if i not in used:
+                perm[3] = i
+                break
+
+        if all(p is not None for p in perm) and perm != [0, 1, 2, 3]:
+            proj = proj.transpose(*perm)
 
     nkpts, nbands, nions, norbitals = proj.shape
 
