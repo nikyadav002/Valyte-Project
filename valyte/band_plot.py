@@ -46,7 +46,25 @@ def _get_orbital_weights(bs, spec, structure):
     Uses Spin.up projections (first available spin).
     """
     spin = Spin.up if Spin.up in bs.projections else list(bs.projections.keys())[0]
-    proj = bs.projections[spin]          # (nkpts, nbands, nions, norbitals)
+    proj = np.array(bs.projections[spin])
+
+    # Detect the correct axis ordering.
+    # The projections array is 4-D but the axis order varies across pymatgen
+    # versions and LORBIT settings.  We identify the ion axis by matching
+    # against the number of ions in the structure.
+    n_ions_expected = len(structure)
+
+    if proj.ndim == 4:
+        if proj.shape[2] == n_ions_expected:
+            # Standard: (kpts/bands, bands/kpts, nions, norbitals)
+            pass
+        elif proj.shape[3] == n_ions_expected and proj.shape[2] != n_ions_expected:
+            # Ions and orbitals axes are swapped → transpose last two dims
+            proj = proj.transpose(0, 1, 3, 2)
+        elif proj.shape[0] == n_ions_expected:
+            # (nions, ..., ..., ...) – unusual; move ion axis to position 2
+            proj = np.moveaxis(proj, 0, 2)
+
     nkpts, nbands, nions, norbitals = proj.shape
 
     element, orbital = _parse_orb_spec(spec)
@@ -63,7 +81,7 @@ def _get_orbital_weights(bs, spec, structure):
     else:
         orb_indices = list(range(norbitals))
 
-    return proj[:, :, :, :][:, :, atom_indices, :][:, :, :, orb_indices].sum(axis=(2, 3))
+    return proj[:, :, atom_indices, :][:, :, :, orb_indices].sum(axis=(2, 3))
 
 
 def _draw_triangle_legend(ax, tricolors, tri_labels):
