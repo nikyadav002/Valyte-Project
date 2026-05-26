@@ -7,6 +7,7 @@ mpl.rcParams["axes.unicode_minus"] = False
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
+import matplotlib.patheffects as path_effects
 from matplotlib.collections import LineCollection
 from matplotlib.colors import to_rgb
 from pymatgen.io.vasp import BSVasprun
@@ -21,6 +22,8 @@ _ORBITAL_INDICES = {
     "d": [4, 5, 6, 7, 8],
     "f": [9, 10, 11, 12, 13, 14, 15],
 }
+
+DEFAULT_TRICOLORS = ["#E63946", "#3A86FF", "#2DC653"]
 
 
 def _parse_orb_spec(spec):
@@ -104,44 +107,89 @@ def _get_orbital_weights(bs, spec, structure):
     return proj[:, :, atom_indices, :][:, :, :, orb_indices].sum(axis=(2, 3))
 
 
-def _draw_triangle_legend(ax, tricolors, tri_labels):
-    """Draw a compact ternary color triangle as an inset in the upper-right corner."""
+def _draw_triangle_legend(fig, tricolors, tri_labels):
+    """Draw a smooth ternary color triangle in the figure's upper-right corner.
+
+    Uses vectorized barycentric interpolation rendered via imshow for a
+    pixel-perfect continuous gradient with anti-aliased edges.
+    """
     color_arr = np.array([to_rgb(c) for c in tricolors])
 
-    # Equilateral triangle vertices: top, bottom-left, bottom-right
-    V = np.array([[0.5, np.sqrt(3) / 2], [0.0, 0.0], [1.0, 0.0]])
+    # Triangle vertices in axes-data coords: top, bottom-left, bottom-right
+    center = np.array([0.5, 0.5])
+    radius = 0.48
+    V = np.array([
+        [center[0], center[1] + radius],
+        [center[0] - np.sqrt(3) * radius / 2, center[1] - radius / 2],
+        [center[0] + np.sqrt(3) * radius / 2, center[1] - radius / 2],
+    ])
 
-    # Sample points in barycentric coordinates
-    n = 60
-    xs, ys, cs = [], [], []
-    for w0 in np.linspace(0, 1, n):
-        for w1 in np.linspace(0, 1 - w0, n):
-            w2 = 1.0 - w0 - w1
-            if w2 < -1e-9:
-                continue
-            w2 = max(w2, 0.0)
-            xs.append(w0 * V[0, 0] + w1 * V[1, 0] + w2 * V[2, 0])
-            ys.append(w0 * V[0, 1] + w1 * V[1, 1] + w2 * V[2, 1])
-            cs.append(np.clip(w0 * color_arr[0] + w1 * color_arr[1] + w2 * color_arr[2], 0, 1))
+    # ---- Smooth gradient via vectorized barycentric interpolation ----
+    res = 300
+    pad = 0.03
+    x0, x1 = V[:, 0].min() - pad, V[:, 0].max() + pad
+    y0, y1 = V[:, 1].min() - pad, V[:, 1].max() + pad
+    xg, yg = np.meshgrid(np.linspace(x0, x1, res), np.linspace(y0, y1, res))
 
-    ax_tri = ax.inset_axes([0.78, 0.78, 0.20, 0.20])
-    ax_tri.scatter(xs, ys, c=cs, s=3, linewidths=0, rasterized=True)
+    # Barycentric weights for every pixel
+    det = ((V[1, 1] - V[2, 1]) * (V[0, 0] - V[2, 0]) +
+           (V[2, 0] - V[1, 0]) * (V[0, 1] - V[2, 1]))
+    w0 = ((V[1, 1] - V[2, 1]) * (xg - V[2, 0]) +
+          (V[2, 0] - V[1, 0]) * (yg - V[2, 1])) / det
+    w1 = ((V[2, 1] - V[0, 1]) * (xg - V[2, 0]) +
+          (V[0, 0] - V[2, 0]) * (yg - V[2, 1])) / det
+    w2 = 1.0 - w0 - w1
 
-    tri = mpatches.Polygon(V, fill=False, edgecolor="k", linewidth=0.6)
-    ax_tri.add_patch(tri)
+    # Anti-aliased edges via feathered alpha
+    edge_dist = np.minimum(np.minimum(w0, w1), w2)
+    alpha = np.clip(edge_dist / 0.015, 0.0, 1.0)
+
+    # Blend the three colors by barycentric weights
+    rgb = np.clip(w0[..., None] * color_arr[0] +
+                  w1[..., None] * color_arr[1] +
+                  w2[..., None] * color_arr[2], 0, 1)
+
+    img = np.zeros((res, res, 4))
+    img[..., :3] = rgb
+    img[..., 3] = alpha
+    img = img[::-1]  # flip y-axis for imshow (origin='upper')
+
+    # ---- Draw ----
+    ax_tri = fig.add_axes([0.845, 0.815, 0.15, 0.16])
+
+    # White circle badge
+    badge = mpatches.Circle(
+        center, 0.57,
+        facecolor="white", edgecolor="0.75", linewidth=0.6,
+        zorder=-5, clip_on=False,
+    )
+    ax_tri.add_patch(badge)
+
+    ax_tri.imshow(img, extent=[x0, x1, y0, y1],
+                  interpolation="bilinear", zorder=2, aspect="auto")
+
+    # Crisp triangle outline
+    tri_border = mpatches.Polygon(V, closed=True, fill=False,
+                                  edgecolor="0.35", linewidth=0.6, zorder=3)
+    ax_tri.add_patch(tri_border)
 
     ax_tri.set_xlim(-0.22, 1.22)
-    ax_tri.set_ylim(-0.22, np.sqrt(3) / 2 + 0.15)
+    ax_tri.set_ylim(-0.24, 1.24)
     ax_tri.set_aspect("equal")
     ax_tri.axis("off")
 
-    pad = 0.12
-    ax_tri.text(V[0, 0], V[0, 1] + pad, tri_labels[0],
-                ha="center", va="bottom", fontsize=6, fontweight="bold", color=tricolors[0])
-    ax_tri.text(V[1, 0] - pad, V[1, 1] - pad * 0.5, tri_labels[1],
-                ha="right", va="top", fontsize=6, fontweight="bold", color=tricolors[1])
-    ax_tri.text(V[2, 0] + pad, V[2, 1] - pad * 0.5, tri_labels[2],
-                ha="left", va="top", fontsize=6, fontweight="bold", color=tricolors[2])
+    # Labels with white outline stroke for guaranteed readability
+    outline = [path_effects.withStroke(linewidth=3, foreground="white")]
+
+    ax_tri.text(0.50, 1.12, tri_labels[0],
+                ha="center", va="center", fontsize=8, fontweight="bold",
+                color=tricolors[0], zorder=4, path_effects=outline)
+    ax_tri.text(-0.08, 0.06, tri_labels[1],
+                ha="center", va="center", fontsize=8, fontweight="bold",
+                color=tricolors[1], zorder=4, path_effects=outline)
+    ax_tri.text(1.08, 0.06, tri_labels[2],
+                ha="center", va="center", fontsize=8, fontweight="bold",
+                color=tricolors[2], zorder=4, path_effects=outline)
 
 
 def _save_band_dat(distances, energies, ticks, filepath):
@@ -349,7 +397,7 @@ def plot_orbital_band_structure(
     if tricolor is None:
         tricolor = ["s", "p", "d"]
     if tricolors is None:
-        tricolors = ["#d62828", "#2a9d8f", "#4361ee"]
+        tricolors = DEFAULT_TRICOLORS
     if tri_labels is None:
         tri_labels = list(tricolor)
 
@@ -445,9 +493,8 @@ def plot_orbital_band_structure(
 
     ax.set_xlim(distances[0][0], distances[-1][-1])
 
-    _draw_triangle_legend(ax, tricolors, tri_labels)
-
     plt.tight_layout()
+    _draw_triangle_legend(fig, tricolors, tri_labels)
     plt.savefig(output, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {output}")

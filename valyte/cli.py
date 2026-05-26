@@ -12,7 +12,12 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pymatgen")
 
 from valyte.supercell import create_supercell
 from valyte.band import generate_band_kpoints
-from valyte.band_plot import plot_band_structure, plot_orbital_band_structure, plot_spin_texture_band_structure
+from valyte.band_plot import (
+    DEFAULT_TRICOLORS,
+    plot_band_structure,
+    plot_orbital_band_structure,
+    plot_spin_texture_band_structure,
+)
 from valyte.dos_plot import load_dos, plot_dos
 from valyte.kpoints import generate_kpoints_interactive
 from valyte.potcar import generate_potcar
@@ -100,9 +105,9 @@ def main():
              "Formats: 's'|'p'|'d'|'f', 'Fe', 'Fe:d', 'O(p)'. Example: --tricolor s p d",
     )
     band_parser.add_argument(
-        "--tricolors", nargs=3, metavar=("COLOR1", "COLOR2", "COLOR3"),
-        default=["#d62828", "#2a9d8f", "#4361ee"],
-        help="Colors for the 3 tricolor specs (default: crimson teal blue)",
+        "--tricolors", "--colors", nargs=3, metavar=("COLOR1", "COLOR2", "COLOR3"),
+        default=DEFAULT_TRICOLORS,
+        help="Colors for the 3 tricolor specs (default: red blue green)",
     )
     band_parser.add_argument(
         "--tri-labels", nargs=3, metavar=("LBL1", "LBL2", "LBL3"),
