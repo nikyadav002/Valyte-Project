@@ -27,6 +27,8 @@
 | [`valyte band`](band.md#2-standard-band-structure-plot) | Color-coded band structure with VBM aligned to 0 eV |
 | [`valyte band --tricolor`](band.md#3-tricolor-orbital-resolved-plot) | **Orbital-resolved tricolor band structure** |
 | [`valyte ipr`](ipr.md) | Inverse Participation Ratio from PROCAR |
+| [`valyte effmass`](effmass.md) | Carrier effective masses at VBM/CBM from parabolic fitting |
+| [`valyte converge`](converge.md) | Ionic and SCF convergence monitor with multi-panel plots |
 
 ---
 

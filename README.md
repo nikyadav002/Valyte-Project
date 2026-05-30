@@ -38,6 +38,8 @@
 | `valyte band --spin-resolved` | **Spin-polarized band structure** — spin-up (blue) and spin-down (red) channels |
 | `valyte band --spin-texture` | **Non-collinear spin texture** — bands colored by Sₓ, S_y, or S_z expectation value |
 | `valyte ipr` | Inverse Participation Ratio from PROCAR |
+| `valyte effmass` | Carrier effective masses at VBM/CBM from parabolic fitting |
+| `valyte converge` | Ionic and SCF convergence monitor with multi-panel plots |
 
 ---
 
@@ -342,6 +344,76 @@ Interactive — reads `PROCAR`, shows system info, prompts for band indices, sav
 **Output columns:** Band | Energy (eV) | IPR | N_eff (= 1/IPR)
 
 A state localized on a single atom has IPR ≈ 1 and N_eff ≈ 1. Delocalized band states have small IPR and large N_eff. Use IPR to identify defect states in supercell calculations.
+
+</details>
+
+<details>
+<summary><strong>Effective Mass</strong></summary>
+
+<br>
+
+Compute carrier effective masses (m*/m₀) at the VBM and CBM by fitting a parabola to the band dispersion along each high-symmetry direction. Works from `vasprun.xml` alone — no extra input needed.
+
+```bash
+valyte effmass [options]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `--vasprun` | `.` | Path to `vasprun.xml` or directory |
+| `--kpoints` | auto-detected | Path to `KPOINTS` file for labels |
+| `--npoints` | `3` | K-points on each side of extremum used for fitting |
+| `--band-index` | auto | Manual 1-indexed band indices to fit |
+| `--tol` | `1e-3` | Degeneracy tolerance in eV |
+| `--plot` | off | Save parabolic fit plot |
+| `-o`, `--output` | `valyte_effmass.png` | Output plot filename (with `--plot`) |
+| `--save-data` | off | Save results to `valyte_effmass.dat` |
+
+```bash
+valyte effmass                         # Auto-detect VBM/CBM
+valyte effmass --npoints 5             # Wider fitting window
+valyte effmass --plot -o effmass.png   # Save parabolic fit figure
+valyte effmass --save-data             # Export to valyte_effmass.dat
+```
+
+> **Requirement:** Line-mode band structure calculation (`IBRION = -1`, line-mode `KPOINTS`). A self-consistent calculation will raise an error.
+
+</details>
+
+<details>
+<summary><strong>Convergence Monitor</strong></summary>
+
+<br>
+
+Monitor and visualize the convergence of VASP relaxation, single-point, or MD calculations by parsing `OSZICAR` (always) and optionally `OUTCAR` (for forces and pressure).
+
+```bash
+valyte converge [path] [options]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `path` | `.` | Directory or direct path to `OSZICAR` |
+| `--electronic` | off | Show SCF convergence instead of ionic |
+| `--forces` | off | Include max-force panel (requires `OUTCAR`) |
+| `--stress` | off | Include pressure panel (requires `OUTCAR`) |
+| `--mag` | off | Include magnetization subplot |
+| `--ethresh` | from `OUTCAR` / `1e-4` | Energy convergence reference line (eV) |
+| `--fthresh` | `0.02` | Force convergence reference line (eV/Å) |
+| `--start` | `1` | First ionic step to include |
+| `--end` | last | Last ionic step to include |
+| `--no-plot` | off | Print terminal summary only (fast SSH check) |
+| `-o`, `--output` | `valyte_converge.png` | Output plot filename |
+| `--save-data` | off | Save parsed data to `valyte_converge.dat` |
+
+```bash
+valyte converge                        # 2-panel ionic plot from OSZICAR
+valyte converge --forces               # Add max-force panel (needs OUTCAR)
+valyte converge --forces --stress      # Add force + pressure panels
+valyte converge --electronic           # SCF convergence across all ionic steps
+valyte converge --no-plot              # Terminal summary only
+valyte converge /path/to/run --start 5 --end 30
+```
 
 </details>
 

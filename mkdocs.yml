@@ -35,6 +35,8 @@ nav:
   - DOS: dos.md
   - Pre-processing: preprocessing.md
   - IPR: ipr.md
+  - Effective Mass: effmass.md
+  - Convergence: converge.md
 
 markdown_extensions:
   - admonition
