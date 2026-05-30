@@ -23,6 +23,8 @@ from valyte.kpoints import generate_kpoints_interactive
 from valyte.potcar import generate_potcar
 from valyte.ipr import run_ipr_interactive
 from valyte.geoopt import check_convergence
+from valyte.effmass import compute_effective_masses, print_results, save_results_dat
+from valyte.effmass_plot import plot_effective_mass
 
 
 def _normalize_element(symbol: str) -> str:
@@ -157,6 +159,17 @@ def main():
     force_check_parser.add_argument("outcar", nargs="?", default="OUTCAR", help="Path to OUTCAR file (default: OUTCAR)")
     force_check_parser.add_argument("--ediffg", type=float, default=None, help="Force convergence threshold in eV/Å (e.g. 0.02)")
 
+    # Effective mass
+    effmass_parser = subparsers.add_parser("effmass", help="Compute carrier effective masses at VBM/CBM")
+    effmass_parser.add_argument("--vasprun", default=".", help="Path to vasprun.xml or directory containing it")
+    effmass_parser.add_argument("--kpoints", default=None, help="Path to KPOINTS file for high-symmetry labels")
+    effmass_parser.add_argument("--npoints", type=int, default=3, help="Fitting points on each side of extremum (default: 3)")
+    effmass_parser.add_argument("--band-index", type=int, nargs="+", default=None, help="Manual 1-indexed band indices to fit")
+    effmass_parser.add_argument("--plot", action="store_true", help="Save parabolic fit plot")
+    effmass_parser.add_argument("-o", "--output", default="valyte_effmass.png", help="Output plot filename (with --plot)")
+    effmass_parser.add_argument("--save-data", action="store_true", help="Save results to valyte_effmass.dat")
+    effmass_parser.add_argument("--tol", type=float, default=1e-3, help="Degeneracy tolerance in eV (default: 1e-3)")
+
     args = parser.parse_args()
 
     if args.command == "dos":
@@ -231,6 +244,26 @@ def main():
                 outcar_path=args.outcar,
                 ediffg=args.ediffg,
             )
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.command == "effmass":
+        try:
+            results = compute_effective_masses(
+                vasprun_path=args.vasprun,
+                kpoints_path=args.kpoints,
+                npoints=args.npoints,
+                band_index=args.band_index,
+                tol=args.tol,
+            )
+            print_results(results)
+
+            if args.plot:
+                plot_effective_mass(results, output=args.output)
+
+            if args.save_data:
+                save_results_dat(results)
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)
