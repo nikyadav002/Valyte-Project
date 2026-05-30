@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="valyte/Logo.png" alt="Valyte Logo" width="100%"/>
+  <img src="https://raw.githubusercontent.com/nikyadav002/Valyte-Project/main/valyte/Logo.png" alt="Valyte Logo" width="100%"/>
 </p>
 
 <p align="center">
@@ -68,8 +68,8 @@ pip install -e .
 ## Gallery
 
 <p align="center">
-  <img src="valyte/valyte_dos.png" alt="DOS Plot Example" width="47%"/>
-  <img src="valyte/valyte_band.png" alt="Band Structure Example" width="38%"/>
+  <img src="https://raw.githubusercontent.com/nikyadav002/Valyte-Project/main/valyte/valyte_dos.png" alt="DOS Plot Example" width="47%"/>
+  <img src="https://raw.githubusercontent.com/nikyadav002/Valyte-Project/main/valyte/valyte_band.png" alt="Band Structure Example" width="38%"/>
 </p>
 
 ---
