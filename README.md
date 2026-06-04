@@ -9,11 +9,48 @@
   <a href="https://github.com/nikyadav002/Valyte-Project/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-2a9d8f" alt="License"></a>
 </p>
 
-# Valyte
+<p align="center">
+  <strong>Publication-quality VASP pre- and post-processing from a single CLI.</strong>
+</p>
 
-**Valyte** is a CLI tool for VASP workflows — pre-processing and post-processing — built for clean, publication-quality output.
+---
 
-**[Full Documentation → valyte-project.readthedocs.io](https://valyte-project.readthedocs.io/en/latest/)**
+Valyte turns raw VASP output into clean, publication-ready plots and analysis — band structures, density of states, effective masses, convergence diagnostics, and more — all from one command-line tool. No boilerplate scripts, no Jupyter notebooks, no manual formatting.
+
+## ✨ Highlights
+
+- **One command, one plot** — `valyte band`, `valyte dos`, `valyte converge` — each produces a publication-quality figure with zero configuration.
+- **Orbital & spin resolution** — Tricolor orbital-projected bands, spin-resolved channels, and non-collinear spin textures out of the box.
+- **Smart pre-processing** — Automatic high-symmetry k-paths (Bradley–Cracknell), supercell generation, and POTCAR handling.
+- **Data export** — Every plot command supports `--save-data` to export raw data for custom post-processing.
+- **Beautiful defaults** — Gradient fills, adaptive legends, and clean typography that look great in papers without tweaking.
+
+## 📸 Gallery
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/nikyadav002/Valyte-Project/main/valyte/valyte_dos.png" alt="DOS Plot Example" width="47%"/>
+  <img src="https://raw.githubusercontent.com/nikyadav002/Valyte-Project/main/valyte/valyte_band.png" alt="Band Structure Example" width="38%"/>
+</p>
+
+<p align="center">
+  <em>Left: Orbital-resolved density of states with gradient fills. Right: Color-coded band structure with VBM at 0 eV.</em>
+</p>
+
+## 🚀 Quick Start
+
+```bash
+pip install valyte
+```
+
+Then, from a directory containing your VASP output files:
+
+```bash
+valyte dos                      # Plot density of states
+valyte band                     # Plot band structure
+valyte converge --forces        # Check relaxation convergence
+```
+
+That's it. See the [Getting Started guide](https://valyte-project.readthedocs.io/en/latest/getting-started/) for a complete walkthrough.
 
 ---
 
@@ -25,7 +62,7 @@
 |---|---|
 | `valyte supercell` | Generate supercells from POSCAR files |
 | `valyte kpt` | Interactive KPOINTS generation (Monkhorst-Pack / Gamma) |
-| `valyte band kpt-gen` | Automatic high-symmetry k-path (Bradley-Cracknell by default) |
+| `valyte band kpt-gen` | Automatic high-symmetry k-path (Bradley–Cracknell by default) |
 | `valyte potcar` | Generate POTCAR from POSCAR species |
 
 ### Post-processing
@@ -34,9 +71,9 @@
 |---|---|
 | `valyte dos` | Total and projected DOS with orbital resolution and gradient fills |
 | `valyte band` | Color-coded band structure with VBM aligned to 0 eV |
-| `valyte band --tricolor` | **Orbital-resolved tricolor band structure** |
-| `valyte band --spin-resolved` | **Spin-polarized band structure** — spin-up (blue) and spin-down (red) channels |
-| `valyte band --spin-texture` | **Non-collinear spin texture** — bands colored by Sₓ, S_y, or S_z expectation value |
+| `valyte band --tricolor` | Orbital-resolved tricolor band structure |
+| `valyte band --spin-resolved` | Spin-polarized band structure — spin-up and spin-down channels |
+| `valyte band --spin-texture` | Non-collinear spin texture — bands colored by Sₓ, Sᵧ, or S_z |
 | `valyte ipr` | Inverse Participation Ratio from PROCAR |
 | `valyte effmass` | Carrier effective masses at VBM/CBM from parabolic fitting |
 | `valyte converge` | Ionic and SCF convergence monitor with multi-panel plots |
@@ -45,17 +82,19 @@
 
 ## Installation
 
+### From PyPI (recommended)
+
 ```bash
 pip install valyte
 ```
 
-To update:
+### Update to the latest version
 
 ```bash
 pip install --upgrade valyte
 ```
 
-Or from source:
+### From source (for development)
 
 ```bash
 git clone https://github.com/nikyadav002/Valyte-Project
@@ -63,362 +102,52 @@ cd Valyte-Project
 pip install -e .
 ```
 
----
+### Requirements
 
-## Gallery
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/nikyadav002/Valyte-Project/main/valyte/valyte_dos.png" alt="DOS Plot Example" width="47%"/>
-  <img src="https://raw.githubusercontent.com/nikyadav002/Valyte-Project/main/valyte/valyte_band.png" alt="Band Structure Example" width="38%"/>
-</p>
+- Python ≥ 3.8
+- Dependencies (`numpy`, `matplotlib`, `pymatgen`, `scipy`, `click`, `seekpath`) are installed automatically.
+- For `valyte potcar`: requires [pymatgen pseudopotential setup](https://pymatgen.org/installation.html#potcar-setup).
 
 ---
 
-## Usage
+## Documentation
 
-Run `valyte --help` or `valyte <command> --help` at any time.
+**[📖 Full Documentation → valyte-project.readthedocs.io](https://valyte-project.readthedocs.io/en/latest/)**
 
-<details>
-<summary><strong>Supercell</strong></summary>
+The documentation site includes:
 
-<br>
+| Page | What you'll find |
+|---|---|
+| [Getting Started](https://valyte-project.readthedocs.io/en/latest/getting-started/) | Installation, prerequisites, and your first plot |
+| [Band Structure](https://valyte-project.readthedocs.io/en/latest/band/) | Standard, tricolor, spin-resolved, and spin-texture modes |
+| [Density of States](https://valyte-project.readthedocs.io/en/latest/dos/) | Total and projected DOS with orbital resolution |
+| [Effective Mass](https://valyte-project.readthedocs.io/en/latest/effmass/) | Carrier effective masses from parabolic fitting |
+| [Convergence](https://valyte-project.readthedocs.io/en/latest/converge/) | Ionic, electronic, force, and pressure convergence |
+| [IPR](https://valyte-project.readthedocs.io/en/latest/ipr/) | Wavefunction localization analysis |
+| [Pre-processing](https://valyte-project.readthedocs.io/en/latest/preprocessing/) | Supercells, k-points, and POTCAR generation |
+| [CLI Reference](https://valyte-project.readthedocs.io/en/latest/cli-reference/) | Every command and flag in one searchable page |
+| [FAQ](https://valyte-project.readthedocs.io/en/latest/faq/) | Common issues and troubleshooting |
 
-```bash
-valyte supercell nx ny nz [options]
-```
+---
 
-| Option | Default | Description |
-|---|---|---|
-| `-i`, `--input` | `POSCAR` | Input POSCAR file |
-| `-o`, `--output` | `POSCAR_supercell` | Output filename |
+## Contributing
 
-```bash
-valyte supercell 2 2 2
-valyte supercell 3 3 1 -i POSCAR_primitive -o POSCAR_3x3x1
-```
+Contributions are welcome! Whether it's a bug report, feature request, or pull request — all help is appreciated.
 
-</details>
+- 🐛 **Report a bug** — [Open an issue](https://github.com/nikyadav002/Valyte-Project/issues/new)
+- 💡 **Request a feature** — [Open an issue](https://github.com/nikyadav002/Valyte-Project/issues/new)
+- 🔧 **Submit a fix** — Fork, branch, and [open a pull request](https://github.com/nikyadav002/Valyte-Project/pulls)
 
-<details>
-<summary><strong>Band Structure — KPOINTS generation</strong></summary>
-
-<br>
-
-Automatically generate a line-mode KPOINTS file with high-symmetry paths.
-
-```bash
-valyte band kpt-gen [options]
-```
-
-| Option | Default | Description |
-|---|---|---|
-| `-i`, `--input` | `POSCAR` | Input POSCAR file |
-| `-n`, `--npoints` | `40` | Points per segment |
-| `-o`, `--output` | `KPOINTS` | Output filename |
-| `--mode` | `bradcrack` | Path convention: `bradcrack`, `seekpath`, `latimer_munro`, `setyawan_curtarolo` |
-
-```bash
-valyte band kpt-gen -n 60
-valyte band kpt-gen --mode seekpath
-```
-
-> **Important:** A `POSCAR_standard` file is also written. You **must** use this standardized structure for the band calculation (`cp POSCAR_standard POSCAR`) — the k-path corresponds to this specific cell orientation.
-
-</details>
-
-<details>
-<summary><strong>Band Structure — Standard plot</strong></summary>
-
-<br>
-
-Bands are colored purple (valence) and teal (conduction), with the VBM set to 0 eV.
-
-```bash
-valyte band [options]
-```
-
-| Option | Default | Description |
-|---|---|---|
-| `--vasprun` | `.` | Path to `vasprun.xml` or directory |
-| `--kpoints` | auto-detected | Path to `KPOINTS` file for labels |
-| `--ylim` | `-4 4` | Energy window |
-| `-o`, `--output` | `valyte_band.png` | Output filename |
-| `--font` | `Arial` | Font: `Arial`, `Helvetica`, `Times New Roman` |
-| `--save-data` | off | Save band data to `valyte_band.dat` |
-
-```bash
-valyte band --ylim -3 3 -o my_bands.png
-valyte band --ylim -3 3 --save-data
-```
-
-</details>
-
-<details>
-<summary><strong>Band Structure — Tricolor orbital-resolved plot</strong></summary>
-
-<br>
-
-Each band segment is colored by blending three base colors weighted by the relative orbital/element projection at each k-point. A ternary triangle legend is drawn in the corner.
-
-```bash
-valyte band --tricolor SPEC1 SPEC2 SPEC3 [options]
-```
-
-**Spec formats:**
-
-| Format | Example | Selects |
-|---|---|---|
-| Orbital | `s`, `p`, `d`, `f` | That orbital across all atoms |
-| Element | `Fe`, `O` | All orbitals for that element |
-| Element + orbital | `Fe:d`, `O(p)` | Specific orbital for that element |
-
-| Option | Default | Description |
-|---|---|---|
-| `--tricolor` | — | 3 specs (required) |
-| `--tricolors` | `#e74c3c #2ecc71 #3498db` | 3 colors (red, green, blue) |
-| `--tri-labels` | spec strings | 3 labels for the triangle legend |
-| `--lw` | `2.0` | Line width |
-| `--save-data` | off | Save band data to `valyte_band.dat` |
-
-> **Requirement:** VASP must be run with `LORBIT = 11` (or ≥ 10) to write projected eigenvalues into `vasprun.xml`.
-
-```bash
-# s / p / d — default red, green, blue
-valyte band --tricolor s p d --ylim -4 4
-
-# Element-resolved (e.g. MoSSe)
-valyte band --tricolor Mo S Se \
-  --tricolors "#e74c3c" "#2ecc71" "#3498db" \
-  --tri-labels Mo S Se --ylim -3 3
-
-# Element + orbital resolved
-valyte band --tricolor Fe:d O:p s --ylim -5 5 -o orbital_band.png
-```
-
-</details>
-
-<details>
-<summary><strong>Band Structure — Spin-resolved plot (collinear)</strong></summary>
-
-<br>
-
-For spin-polarized calculations, plot spin-up and spin-down channels in distinct colors on the same axes. Spin-up bands are drawn as solid blue lines, spin-down as dashed red lines, with an automatic legend.
-
-```bash
-valyte band --spin-resolved [options]
-```
-
-| Option | Default | Description |
-|---|---|---|
-| `--spin-resolved` | off | Enable spin-resolved mode |
-| `--ylim` | `-4 4` | Energy window |
-| `-o`, `--output` | `valyte_band.png` | Output filename |
-
-> Silently falls back to the standard plot if the calculation has only one spin channel (non-magnetic).
-
-```bash
-valyte band --spin-resolved
-valyte band --spin-resolved --ylim -3 3 -o spin_band.png
-```
-
-</details>
-
-<details>
-<summary><strong>Band Structure — Non-collinear spin texture</strong></summary>
-
-<br>
-
-For non-collinear (SOC / LSORBIT) calculations, color each band segment by the expectation value of a chosen spin component (Sₓ, S_y, or S_z), summed over all atoms and orbitals. A diverging colormap centered at zero reveals the spin polarization direction along the k-path.
-
-```bash
-valyte band --spin-texture {sx,sy,sz} [options]
-```
-
-| Option | Default | Description |
-|---|---|---|
-| `--spin-texture` | — | Component to visualize: `sx`, `sy`, or `sz` |
-| `--spin-cmap` | `seismic` | Diverging colormap (any matplotlib name) |
-| `--ylim` | `-4 4` | Energy window |
-| `-o`, `--output` | `valyte_band_sz.png` | Output filename (auto-named by component) |
-
-> **Requirement:** VASP must be run with `LSORBIT = .TRUE.` (or `LNONCOLLINEAR = .TRUE.`) and `LORBIT >= 11`.
-
-```bash
-# Out-of-plane spin texture (most common)
-valyte band --spin-texture sz
-
-# In-plane components
-valyte band --spin-texture sx
-valyte band --spin-texture sy
-
-# Custom colormap and energy window
-valyte band --spin-texture sz --spin-cmap RdBu_r --ylim -2 2
-```
-
-</details>
-
-<details>
-<summary><strong>DOS — Density of States</strong></summary>
-
-<br>
-
-```bash
-valyte dos [path/to/vasprun.xml] [options]
-```
-
-| Option | Default | Description |
-|---|---|---|
-| `-e`, `--elements` | all | Elements/orbitals to plot |
-| `--xlim` | `-6 6` | Energy range |
-| `--ylim` | auto | DOS range |
-| `--scale` | `1.0` | Divide DOS by this factor |
-| `--fermi` | off | Draw dashed line at E = 0 |
-| `--pdos` | off | Show only projected DOS |
-| `--legend-cutoff` | `0.10` | Hide legend if PDOS fraction < threshold |
-| `-o`, `--output` | `valyte_dos.png` | Output filename |
-| `--font` | `Arial` | Font family |
-| `--save-data` | off | Save DOS data to `valyte_dos.dat` |
-
-```bash
-valyte dos                            # All orbitals, all elements
-valyte dos -e Fe O                    # Total PDOS for Fe and O
-valyte dos -e "Fe(d)" "O(p)"          # Specific orbitals
-valyte dos -e Fe "Fe(d)"              # Fe total + Fe d-orbital
-valyte dos ./run --xlim -5 5 --fermi -o my_dos.png
-valyte dos -e Fe O --save-data        # Save data to valyte_dos.dat
-```
-
-</details>
-
-<details>
-<summary><strong>K-Points — Interactive SCF grid</strong></summary>
-
-<br>
-
-```bash
-valyte kpt
-```
-
-Prompts for K-mesh scheme (Monkhorst-Pack or Gamma) and K-spacing in 2π/Å, then calculates the optimal grid from your `POSCAR`.
-
-</details>
-
-<details>
-<summary><strong>POTCAR</strong></summary>
-
-<br>
-
-```bash
-valyte potcar [options]
-```
-
-| Option | Default | Description |
-|---|---|---|
-| `-i`, `--input` | `POSCAR` | Input POSCAR file |
-| `-o`, `--output` | `POTCAR` | Output filename |
-| `--functional` | `PBE` | `PBE`, `PBE_52`, `PBE_54`, `LDA`, etc. |
-
-```bash
-valyte potcar
-valyte potcar --functional PBE_54
-valyte potcar -i POSCAR_relaxed -o POTCAR_new
-```
-
-> **Pymatgen configuration required:** Set `PMG_VASP_PSP_DIR` in `~/.pmgrc.yaml`. See the [Pymatgen docs](https://pymatgen.org/installation.html#potcar-setup).
-
-</details>
-
-<details>
-<summary><strong>IPR — Inverse Participation Ratio</strong></summary>
-
-<br>
-
-Compute the Inverse Participation Ratio from `PROCAR` to quantify wavefunction localization.
-
-```bash
-valyte ipr
-```
-
-Interactive — reads `PROCAR`, shows system info, prompts for band indices, saves results to `ipr_procar.dat`.
-
-**Output columns:** Band | Energy (eV) | IPR | N_eff (= 1/IPR)
-
-A state localized on a single atom has IPR ≈ 1 and N_eff ≈ 1. Delocalized band states have small IPR and large N_eff. Use IPR to identify defect states in supercell calculations.
-
-</details>
-
-<details>
-<summary><strong>Effective Mass</strong></summary>
-
-<br>
-
-Compute carrier effective masses (m*/m₀) at the VBM and CBM by fitting a parabola to the band dispersion along each high-symmetry direction. Works from `vasprun.xml` alone — no extra input needed.
-
-```bash
-valyte effmass [options]
-```
-
-| Option | Default | Description |
-|---|---|---|
-| `--vasprun` | `.` | Path to `vasprun.xml` or directory |
-| `--kpoints` | auto-detected | Path to `KPOINTS` file for labels |
-| `--npoints` | `3` | K-points on each side of extremum used for fitting |
-| `--band-index` | auto | Manual 1-indexed band indices to fit |
-| `--tol` | `1e-3` | Degeneracy tolerance in eV |
-| `--plot` | off | Save parabolic fit plot |
-| `-o`, `--output` | `valyte_effmass.png` | Output plot filename (with `--plot`) |
-| `--save-data` | off | Save results to `valyte_effmass.dat` |
-
-```bash
-valyte effmass                         # Auto-detect VBM/CBM
-valyte effmass --npoints 5             # Wider fitting window
-valyte effmass --plot -o effmass.png   # Save parabolic fit figure
-valyte effmass --save-data             # Export to valyte_effmass.dat
-```
-
-> **Requirement:** Line-mode band structure calculation (`IBRION = -1`, line-mode `KPOINTS`). A self-consistent calculation will raise an error.
-
-</details>
-
-<details>
-<summary><strong>Convergence Monitor</strong></summary>
-
-<br>
-
-Monitor and visualize the convergence of VASP relaxation, single-point, or MD calculations by parsing `OSZICAR` (always) and optionally `OUTCAR` (for forces and pressure).
-
-```bash
-valyte converge [path] [options]
-```
-
-| Option | Default | Description |
-|---|---|---|
-| `path` | `.` | Directory or direct path to `OSZICAR` |
-| `--electronic` | off | Show SCF convergence instead of ionic |
-| `--forces` | off | Include max-force panel (requires `OUTCAR`) |
-| `--stress` | off | Include pressure panel (requires `OUTCAR`) |
-| `--mag` | off | Include magnetization subplot |
-| `--ethresh` | from `OUTCAR` / `1e-4` | Energy convergence reference line (eV) |
-| `--fthresh` | `0.02` | Force convergence reference line (eV/Å) |
-| `--start` | `1` | First ionic step to include |
-| `--end` | last | Last ionic step to include |
-| `--no-plot` | off | Print terminal summary only (fast SSH check) |
-| `-o`, `--output` | `valyte_converge.png` | Output plot filename |
-| `--save-data` | off | Save parsed data to `valyte_converge.dat` |
-
-```bash
-valyte converge                        # 2-panel ionic plot from OSZICAR
-valyte converge --forces               # Add max-force panel (needs OUTCAR)
-valyte converge --forces --stress      # Add force + pressure panels
-valyte converge --electronic           # SCF convergence across all ionic steps
-valyte converge --no-plot              # Terminal summary only
-valyte converge /path/to/run --start 5 --end 30
-```
-
-</details>
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+---
+
+<p align="center">
+  Built by <a href="https://github.com/nikyadav002">Nikhil Singh</a>
+</p>

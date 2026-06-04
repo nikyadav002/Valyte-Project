@@ -1,7 +1,7 @@
 site_name: Valyte
 site_description: A CLI tool for VASP pre-processing and post-processing with publication-quality output
-site_author: Nikhil
-site_url: https://valyte.readthedocs.io/
+site_author: Nikhil Singh
+site_url: https://valyte-project.readthedocs.io/
 
 repo_name: nikyadav002/Valyte-Project
 repo_url: https://github.com/nikyadav002/Valyte-Project
@@ -21,22 +21,33 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
   features:
     - navigation.sections
     - navigation.expand
     - navigation.top
+    - navigation.indexes
+    - navigation.footer
     - content.code.copy
     - content.code.annotate
     - toc.follow
+    - search.suggest
+    - search.highlight
 
 nav:
   - Home: index.md
-  - Band Structure: band.md
-  - DOS: dos.md
+  - Getting Started: getting-started.md
   - Pre-processing: preprocessing.md
-  - IPR: ipr.md
-  - Effective Mass: effmass.md
-  - Convergence: converge.md
+  - Post-processing:
+    - Band Structure: band.md
+    - Density of States: dos.md
+    - Effective Mass: effmass.md
+    - IPR: ipr.md
+    - Convergence: converge.md
+  - Reference:
+    - CLI Reference: cli-reference.md
+    - FAQ & Troubleshooting: faq.md
 
 markdown_extensions:
   - admonition
@@ -45,8 +56,25 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.details
   - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - tables
   - attr_list
   - md_in_html
   - toc:
       permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/nikyadav002/Valyte-Project
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/valyte/

@@ -1,4 +1,4 @@
-# DOS — Density of States
+# Density of States
 
 Plot total and projected density of states from `vasprun.xml` with orbital resolution, adaptive legends, and gradient fills.
 
@@ -7,6 +7,9 @@ valyte dos [path/to/vasprun.xml] [options]
 ```
 
 The path can be a positional argument, passed via `--vasprun`, or omitted to use the current directory.
+
+!!! tip "Combine with band structure"
+    For a complete electronic structure analysis, pair your DOS plot with a [band structure](band.md). Both read from the same `vasprun.xml`.
 
 ---
 
@@ -68,7 +71,9 @@ valyte dos --scale 3 --ylim 0 10
 valyte dos -e Fe O --save-data
 ```
 
-### Exported data format (`valyte_dos.dat`)
+---
+
+## Exported data format (`valyte_dos.dat`)
 
 A plain-text, whitespace-delimited file with one row per energy point:
 
@@ -88,8 +93,11 @@ A plain-text, whitespace-delimited file with one row per energy point:
 
 ## Smart features
 
-**Adaptive legend:** If the maximum PDOS contribution across all plotted species is below the `--legend-cutoff` threshold (default 10% of the total DOS peak), the legend is automatically hidden to avoid cluttering a flat plot.
+**Adaptive legend**
+:   If the maximum PDOS contribution across all plotted species is below the `--legend-cutoff` threshold (default 10% of the total DOS peak), the legend is automatically hidden to avoid cluttering a flat plot. See [FAQ → Legend is not showing](faq.md#legend-is-not-showing) if you need to adjust this.
 
-**Gradient fill:** Peaks are filled with a smooth gradient tied to the line color, giving plots a clean publication aesthetic.
+**Gradient fill**
+:   Peaks are filled with a smooth gradient tied to the line color, giving plots a clean publication aesthetic.
 
-**Orbital-resolved by default:** When no `-e` flag is given, Valyte plots all available elements broken down by s, p, d (and f if present) orbitals automatically.
+**Orbital-resolved by default**
+:   When no `-e` flag is given, Valyte plots all available elements broken down by s, p, d (and f if present) orbitals automatically.

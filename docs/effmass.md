@@ -1,10 +1,13 @@
 # Effective Mass
 
-Compute carrier effective masses (m\*/m₀) at the VBM and CBM by fitting a parabola to the band dispersion along each high-symmetry direction. Works from `vasprun.xml` alone.
+Compute carrier effective masses (m\*/m₀) at the VBM and CBM by fitting a parabola to the band dispersion along each high-symmetry direction. Works from `vasprun.xml` alone — no extra input needed.
 
 ```bash
 valyte effmass [options]
 ```
+
+!!! tip "Workflow"
+    Run [`valyte band kpt-gen`](band.md#1-generate-kpoints) to generate the line-mode KPOINTS, do a non-self-consistent band calculation, then point `valyte effmass` at the resulting `vasprun.xml`. You can also visualize the bands with [`valyte band`](band.md#2-standard-band-structure-plot) using the same data.
 
 ---
 
@@ -23,7 +26,7 @@ where $a$ is the fitted coefficient in eV·Å².
 A fit is produced for each high-symmetry direction in the band structure — so if the VBM sits at Γ and the path passes through Γ twice (e.g. Γ→X and Γ→Y), you get separate masses for each direction.
 
 !!! warning "Non-parabolic bands"
-    If the band is not well described by a parabola in the fitting window, a warning is printed. Narrow-gap semiconductors, d-bands, and bands with strong spin-orbit coupling are common cases where the parabolic approximation breaks down.
+    If the band is not well described by a parabola in the fitting window, a warning is printed. Narrow-gap semiconductors, d-bands, and bands with strong spin-orbit coupling are common cases where the parabolic approximation breaks down. See [FAQ → Effective masses are unreasonably large](faq.md#effective-masses-are-unreasonably-large-or-negative) for guidance.
 
 ---
 
@@ -97,5 +100,4 @@ Effective mass
 - `vasprun.xml` written with `LWAVE = .FALSE.` or `LCHARG = .FALSE.` is fine — projections are not required
 - Self-consistent (SCF) calculations will raise an error — a k-path is needed
 
-!!! tip
-    Run `valyte band kpt-gen` to generate the line-mode KPOINTS, do a non-self-consistent band calculation, then point `valyte effmass` at the resulting `vasprun.xml`.
+See [FAQ → This does not appear to be a line-mode band calculation](faq.md#error-this-does-not-appear-to-be-a-line-mode-band-calculation) for troubleshooting.

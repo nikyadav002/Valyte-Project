@@ -6,7 +6,10 @@ Monitor and visualize the convergence of VASP relaxation, single-point, or MD ca
 valyte converge [path] [options]
 ```
 
-The default mode (no extra flags) needs only `OSZICAR` and produces a 2-panel plot — useful over SSH where OUTCAR may be large or incomplete.
+The default mode (no extra flags) needs only `OSZICAR` and produces a 2-panel plot — useful over SSH where `OUTCAR` may be large or incomplete.
+
+!!! tip "Quick SSH check"
+    Use `valyte converge --no-plot` for a fast terminal summary without generating any plot file — perfect for checking convergence over a slow SSH connection.
 
 ---
 
@@ -35,11 +38,13 @@ The default mode (no extra flags) needs only `OSZICAR` and produces a 2-panel pl
 
 Produces a vertically stacked, shared-x-axis multi-panel plot:
 
-- **Panel 1** — Total energy (E₀, σ→0) vs ionic step
-- **Panel 2** — |ΔE| vs ionic step (log scale) with reference line at `--ethresh`
-- **Panel 3** — Max atomic force vs ionic step (log scale), only with `--forces`
-- **Panel 4** — External pressure vs ionic step, only with `--stress`
-- **Panel 5** — Magnetization, only with `--mag` (spin-polarized runs)
+| Panel | Content | Requires |
+|---|---|---|
+| 1 | Total energy (E₀, σ→0) vs ionic step | `OSZICAR` |
+| 2 | |ΔE| vs ionic step (log scale) with reference line | `OSZICAR` |
+| 3 | Max atomic force vs ionic step (log scale) | `--forces` + `OUTCAR` |
+| 4 | External pressure vs ionic step | `--stress` + `OUTCAR` |
+| 5 | Magnetization | `--mag` (spin-polarized) |
 
 ```bash
 # Basic — OSZICAR only, 2 panels
@@ -128,8 +133,12 @@ Calculation type, total steps, and convergence thresholds are read automatically
 
 ## File handling
 
+Valyte handles common edge cases automatically:
+
 - Reads `OSZICAR` or `OSZICAR.gz` transparently
 - Reads `OUTCAR` or `OUTCAR.gz` transparently (only when `--forces` or `--stress` is set)
 - Falls back to `INCAR` for convergence parameters if `OUTCAR` is absent
 - Handles incomplete files — works on running calculations
 - Handles restarted calculations where the ionic step counter resets
+
+See [FAQ → OSZICAR not found](faq.md#filenotfounderror-oszicar-not-found) or [FAQ → Force panel shows no data](faq.md#force-panel-shows-no-data) for troubleshooting.

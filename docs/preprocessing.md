@@ -1,6 +1,9 @@
 # Pre-processing
 
-Valyte provides three pre-processing utilities for setting up VASP calculations.
+Valyte provides three pre-processing utilities for setting up VASP calculations — supercell generation, interactive k-point grids, and automatic POTCAR generation.
+
+!!! tip "Band structure k-paths"
+    For line-mode KPOINTS (band structure calculations), see [`valyte band kpt-gen`](band.md#1-generate-kpoints) instead.
 
 ---
 
@@ -81,4 +84,4 @@ valyte potcar -i POSCAR_relaxed -o POTCAR_new
     PMG_VASP_PSP_DIR: /path/to/your/pseudopotentials
     ```
 
-    See the [Pymatgen documentation](https://pymatgen.org/installation.html#potcar-setup) for full setup instructions.
+    See the [pymatgen documentation](https://pymatgen.org/installation.html#potcar-setup) for full setup instructions, or the [FAQ → POTCAR errors](faq.md#valueerror-no-potcar-for-element--or-pymatgen-errors) for troubleshooting.

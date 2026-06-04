@@ -1,14 +1,16 @@
 # Band Structure
 
-Valyte provides several band structure modes:
+Valyte provides five band structure modes — from a simple color-coded plot to orbital-resolved tricolor and non-collinear spin textures. All modes share a common set of options and produce publication-quality figures from `vasprun.xml`.
 
-| Sub-command / flag | Description |
-|---|---|
-| `valyte band kpt-gen` | Generate KPOINTS with high-symmetry paths |
-| `valyte band` | Standard color-coded band structure plot |
-| `valyte band --tricolor` | Orbital-resolved tricolor band structure |
-| `valyte band --spin-resolved` | Spin-polarized plot — spin-up (blue) and spin-down (red) |
-| `valyte band --spin-texture` | Non-collinear spin texture colored by Sₓ, S_y, or S_z |
+| Mode | Flag | Use case |
+|---|---|---|
+| [Standard](#2-standard-band-structure-plot) | *(default)* | Quick band structure visualization |
+| [Tricolor](#3-tricolor-orbital-resolved-plot) | `--tricolor` | Orbital or element contributions |
+| [Spin-resolved](#4-spin-resolved-band-structure-collinear) | `--spin-resolved` | Collinear spin-polarized systems |
+| [Spin texture](#5-non-collinear-spin-texture) | `--spin-texture` | SOC / non-collinear magnetism |
+
+!!! tip "Need effective masses?"
+    After plotting your band structure, use [`valyte effmass`](effmass.md) to extract carrier effective masses at the VBM and CBM from the same `vasprun.xml`.
 
 ---
 
@@ -21,7 +23,7 @@ valyte band kpt-gen [options]
 ```
 
 | Option | Default | Description |
-|---|---|---|
+|---|---|---| 
 | `-i`, `--input` | `POSCAR` | Input POSCAR file |
 | `-n`, `--npoints` | `40` | K-points per segment |
 | `-o`, `--output` | `KPOINTS` | Output filename |
@@ -49,7 +51,7 @@ valyte band kpt-gen --mode seekpath
     cp POSCAR_standard POSCAR
     ```
 
-    Running the band calculation with your original POSCAR will produce incorrect k-point labels and potentially wrong paths.
+    Running the band calculation with your original POSCAR will produce incorrect k-point labels and potentially wrong paths. See [FAQ → My k-point labels are wrong](faq.md#my-k-point-labels-are-wrong-or-missing) for details.
 
 !!! note
     A `POTCAR` is also automatically generated (PBE) after KPOINTS creation.
@@ -114,7 +116,7 @@ valyte band --tricolor SPEC1 SPEC2 SPEC3 [options]
 ```
 
 !!! important "VASP requirement"
-    Run VASP with `LORBIT = 11` (or ≥ 10) in your `INCAR`. This writes orbital projection data into `vasprun.xml`, which is required for this mode.
+    Run VASP with `LORBIT = 11` (or ≥ 10) in your `INCAR`. This writes orbital projection data into `vasprun.xml`, which is required for this mode. See [FAQ → My tricolor plot is all one color](faq.md#my-tricolor-plot-is-all-one-color) if you encounter issues.
 
 ### Spec formats
 
@@ -220,6 +222,8 @@ valyte band --spin-texture {sx,sy,sz} [options]
 !!! important "VASP requirements"
     - `LSORBIT = .TRUE.` or `LNONCOLLINEAR = .TRUE.` in `INCAR`
     - `LORBIT >= 11` to write projected eigenvalues and magnetization into `vasprun.xml`
+
+    See [FAQ → No projected_magnetisation data](faq.md#valueerror-no-projected_magnetisation-data-found) if you encounter issues.
 
 ### Options
 
