@@ -246,25 +246,30 @@ def plot_dos(
     if is_spin_polarized:
         ax.axhline(0, color="k", lw=0.5, alpha=1.0)
 
+    # 20 maximally-distinct categorical colors, ordered for adjacent contrast.
+    # Inspired by the Colour Alphabet (Green-Armytage) used by SUMO, but tuned
+    # for Valyte's gradient-fill aesthetic — no washed-out pastels.
     palette = [
-        "#4b0082",
-        "#0096c7",
-        "#e63946",
-        "#023e8a",
-        "#ffb703",
-        "#2a9d8f",
-        "#8e44ad",
-        "#118ab2",
-        "#d62828",
-        "#00b4d8",
-        "#f4a261",
-        "#003049",
-        "#6a994e",
-        "#48cae4",
-        "#0077b6",
-        "#90e0ef",
-        "#ade8f4",
-        "#caf0f8",
+        "#e63946",  # red
+        "#457b9d",  # steel blue
+        "#2a9d8f",  # teal
+        "#f4a261",  # sandy orange
+        "#6a4c93",  # ultra violet
+        "#8ac926",  # yellow-green
+        "#1982c4",  # cerulean
+        "#ca6702",  # bronze
+        "#ff595e",  # coral
+        "#6a994e",  # olive
+        "#b5179e",  # magenta
+        "#219ebc",  # pacific cyan
+        "#9b2226",  # dark red
+        "#606c38",  # army green
+        "#0077b6",  # blue
+        "#bb3e03",  # rust
+        "#005f73",  # dark teal
+        "#ee9b00",  # amber
+        "#7209b7",  # purple
+        "#94d2bd",  # sage
     ]
     lines, labels = [], []
 
