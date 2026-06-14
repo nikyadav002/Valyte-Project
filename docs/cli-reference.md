@@ -42,18 +42,35 @@ valyte supercell 3 3 1 -i POSCAR_primitive -o POSCAR_3x3x1
 
 ## `valyte kpt`
 
-Interactive KPOINTS generation for SCF or relaxation calculations.
+Generate KPOINTS for SCF or relaxation calculations.
 
 ```bash
-valyte kpt
+valyte kpt [options]
 ```
 
-Prompts for:
+With no options, `valyte kpt` runs interactively and prompts for:
 
 1. K-mesh scheme — Monkhorst-Pack or Gamma
 2. K-spacing in 2π/Å (e.g., `0.04`)
 
 The optimal grid is calculated from the lattice vectors in your `POSCAR`.
+
+| Option | Default | Description |
+|---|---|---|
+| `-i`, `--input` | `POSCAR` | Input POSCAR file |
+| `-o`, `--output` | `KPOINTS` | Output KPOINTS file |
+| `--spacing` | `0.04` | K-spacing in 2π/Å |
+| `--scheme` | `gamma` | K-mesh scheme: `gamma` or `mp` |
+| `--no-potcar` | off | Do not auto-generate POTCAR if missing |
+
+**Examples:**
+
+```bash
+valyte kpt
+valyte kpt --spacing 0.04 --scheme gamma
+valyte kpt -i POSCAR_relaxed -o KPOINTS_scf --spacing 0.03 --scheme mp
+valyte kpt --spacing 0.05 --no-potcar
+```
 
 ---
 
@@ -239,10 +256,19 @@ valyte dos -e Fe O --save-data
 Compute the Inverse Participation Ratio from a `PROCAR` file.
 
 ```bash
-valyte ipr
+valyte ipr [options]
 ```
 
 Interactive mode — reads `PROCAR`, shows system info, prompts for band indices, and saves results to `ipr_procar.dat`.
+
+Use `--bands` for non-interactive/batch runs.
+
+| Option | Default | Description |
+|---|---|---|
+| `-i`, `--input` | `PROCAR` | Input PROCAR file |
+| `-b`, `--bands` | interactive prompt | Band indices/ranges, e.g. `5`, `5-8`, or `5 8-10` |
+| `-o`, `--output` | `ipr_procar.dat` | Output data filename |
+| `--details` | off | Print per-k-point IPR values |
 
 Band index input formats:
 
@@ -256,6 +282,15 @@ Band index input formats:
 Output columns: `Band`, `Energy (eV)`, `IPR`, `N_eff (= 1/IPR)`.
 
 !!! note "Requires `LORBIT = 11` (or ≥ 10) to write atom-projected orbital weights into PROCAR."
+
+**Examples:**
+
+```bash
+valyte ipr
+valyte ipr --bands 5-8
+valyte ipr -i PROCAR -b 5 8-10 13 -o defect_ipr.dat
+valyte ipr --bands 6 --details
+```
 
 ---
 

@@ -61,7 +61,7 @@ That's it. See the [Getting Started guide](https://valyte-project.readthedocs.io
 | Command | Description |
 |---|---|
 | `valyte supercell` | Generate supercells from POSCAR files |
-| `valyte kpt` | Interactive KPOINTS generation (Monkhorst-Pack / Gamma) |
+| `valyte kpt` | Interactive or batch KPOINTS generation (Monkhorst-Pack / Gamma) |
 | `valyte band kpt-gen` | Automatic high-symmetry k-path (Bradley–Cracknell by default) |
 | `valyte potcar` | Generate POTCAR from POSCAR species |
 

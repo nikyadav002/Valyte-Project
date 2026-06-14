@@ -19,9 +19,9 @@ from valyte.band_plot import (
     plot_spin_texture_band_structure,
 )
 from valyte.dos_plot import load_dos, plot_dos
-from valyte.kpoints import generate_kpoints_interactive
+from valyte.kpoints import generate_kpoints, generate_kpoints_interactive
 from valyte.potcar import generate_potcar
-from valyte.ipr import run_ipr_interactive
+from valyte.ipr import run_ipr, run_ipr_interactive
 from valyte.geoopt import check_convergence
 from valyte.effmass import compute_effective_masses, print_results, save_results_dat
 from valyte.effmass_plot import plot_effective_mass
@@ -143,8 +143,13 @@ def main():
     kpt_gen_parser.add_argument("--symprec", type=float, default=0.01, help="Symmetry precision (default: 0.01)")
     kpt_gen_parser.add_argument("--mode", default="bradcrack", help="Standardization mode (default: bradcrack)")
 
-    # KPOINTS (interactive)
-    subparsers.add_parser("kpt", help="Interactive K-Point Generation (SCF)")
+    # KPOINTS
+    kpt_parser = subparsers.add_parser("kpt", help="Generate KPOINTS for SCF/relaxation")
+    kpt_parser.add_argument("-i", "--input", help="Input POSCAR file (default: POSCAR)")
+    kpt_parser.add_argument("-o", "--output", help="Output KPOINTS file (default: KPOINTS)")
+    kpt_parser.add_argument("--spacing", type=float, help="K-spacing in 2*pi/A (default: 0.04)")
+    kpt_parser.add_argument("--scheme", help="K-mesh scheme: gamma or mp (default: gamma)")
+    kpt_parser.add_argument("--no-potcar", action="store_true", help="Do not auto-generate POTCAR if missing")
 
     # POTCAR
     potcar_parser = subparsers.add_parser("potcar", help="Generate POTCAR")
@@ -153,7 +158,14 @@ def main():
     potcar_parser.add_argument("--functional", default="PBE", help="Functional (default: PBE)")
 
     # IPR
-    subparsers.add_parser("ipr", help="Compute IPR from PROCAR")
+    ipr_parser = subparsers.add_parser("ipr", help="Compute IPR from PROCAR")
+    ipr_parser.add_argument("-i", "--input", default="PROCAR", help="Input PROCAR file")
+    ipr_parser.add_argument(
+        "-b", "--bands", nargs="+",
+        help="Band indices/ranges, e.g. '5', '5-8', or '5 8-10'",
+    )
+    ipr_parser.add_argument("-o", "--output", default="ipr_procar.dat", help="Output data filename")
+    ipr_parser.add_argument("--details", action="store_true", help="Print per-k-point IPR values")
 
     # Force check
     force_check_parser = subparsers.add_parser("force-check", help="Geometry optimization force/energy convergence check")
@@ -231,7 +243,23 @@ def main():
 
     elif args.command == "kpt":
         try:
-            generate_kpoints_interactive()
+            noninteractive = any([
+                args.input is not None,
+                args.output is not None,
+                args.spacing is not None,
+                args.scheme is not None,
+                args.no_potcar,
+            ])
+            if noninteractive:
+                generate_kpoints(
+                    poscar_path=args.input or "POSCAR",
+                    kspacing=args.spacing if args.spacing is not None else 0.04,
+                    scheme=args.scheme or "gamma",
+                    output=args.output or "KPOINTS",
+                    generate_potcar_if_missing=not args.no_potcar,
+                )
+            else:
+                generate_kpoints_interactive()
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)
@@ -249,7 +277,15 @@ def main():
 
     elif args.command == "ipr":
         try:
-            run_ipr_interactive()
+            if args.bands:
+                run_ipr(
+                    procar_file=args.input,
+                    band_text=" ".join(args.bands),
+                    output=args.output,
+                    show_details=args.details,
+                )
+            else:
+                run_ipr_interactive(procar_file=args.input, output=args.output)
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)

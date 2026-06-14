@@ -19,7 +19,7 @@ Set up VASP calculations with minimal effort:
 | Command | Description |
 |---|---|
 | [`valyte supercell`](preprocessing.md#supercell) | Generate supercells from POSCAR files |
-| [`valyte kpt`](preprocessing.md#k-points-interactive-scf-grid) | Interactive KPOINTS generation (Monkhorst-Pack / Gamma) |
+| [`valyte kpt`](preprocessing.md#k-points-scf-grid) | Interactive or batch KPOINTS generation (Monkhorst-Pack / Gamma) |
 | [`valyte band kpt-gen`](band.md#1-generate-kpoints) | Automatic high-symmetry k-path (Bradley–Cracknell by default) |
 | [`valyte potcar`](preprocessing.md#potcar) | Generate POTCAR from POSCAR species |
 

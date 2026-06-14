@@ -112,6 +112,14 @@ def save_results(results, filename="ipr_procar.dat"):
     print(f"\nResults written to {filename}")
 
 
+def print_summary(results):
+    """Print a compact IPR summary table."""
+    print("\nIPR summary")
+    print("  Band    Energy(eV)      IPR      N_eff")
+    for band, e, ipr, neff in results:
+        print(f"  {band:4d}    {e:10.6f}   {ipr:7.4f}   {neff:8.2f}")
+
+
 def _parse_band_indices(text):
     tokens = re.split(r"[\s,]+", text.strip())
     indices = []
@@ -147,10 +155,49 @@ def _parse_band_indices(text):
     return indices
 
 
-def run_ipr_interactive():
-    """Interactive IPR workflow."""
-    procar_file = "PROCAR"
+def _filter_band_indices(band_indices, nbands):
+    """Keep valid 1-indexed band numbers and warn about skipped values."""
+    filtered = [b for b in band_indices if 1 <= b <= nbands]
+    if not filtered:
+        raise ValueError(f"No bands in range 1..{nbands}.")
 
+    if len(filtered) != len(band_indices):
+        print("Warning: some bands were out of range and were skipped.")
+
+    return filtered
+
+
+def run_ipr(
+    procar_file="PROCAR",
+    band_text=None,
+    output="ipr_procar.dat",
+    show_details=False,
+):
+    """Run IPR analysis without prompting."""
+    proj, energies, nkpts, nbands, natoms = read_procar(procar_file)
+
+    print("PROCAR info")
+    print(f"  k-points : {nkpts}")
+    print(f"  bands    : {nbands}")
+    print(f"  atoms    : {natoms}")
+
+    if not band_text:
+        raise ValueError("No band indices provided.")
+
+    band_indices = _parse_band_indices(band_text)
+    if not band_indices:
+        raise ValueError("No valid band indices found.")
+
+    filtered = _filter_band_indices(band_indices, nbands)
+    results = analyze_bands(proj, energies, nkpts, filtered, verbose=show_details)
+    if not show_details:
+        print_summary(results)
+    save_results(results, output)
+    return results
+
+
+def run_ipr_interactive(procar_file="PROCAR", output="ipr_procar.dat"):
+    """Interactive IPR workflow."""
     try:
         proj, energies, nkpts, nbands, natoms = read_procar(procar_file)
     except Exception as e:
@@ -167,20 +214,17 @@ def run_ipr_interactive():
         print("No band indices provided.")
         return
 
-    band_indices = _parse_band_indices(band_text)
-    if not band_indices:
-        print("No valid band indices found.")
-        return
-
-    filtered = [b for b in band_indices if 1 <= b <= nbands]
-    if not filtered:
-        print(f"No bands in range 1..{nbands}.")
-        return
-
-    if len(filtered) != len(band_indices):
-        print("Warning: some bands were out of range and were skipped.")
-
     show_details = input("Show per-k-point values? [y/N]: ").strip().lower() == "y"
 
-    results = analyze_bands(proj, energies, nkpts, filtered, verbose=show_details)
-    save_results(results, "ipr_procar.dat")
+    try:
+        band_indices = _parse_band_indices(band_text)
+        if not band_indices:
+            raise ValueError("No valid band indices found.")
+
+        filtered = _filter_band_indices(band_indices, nbands)
+        results = analyze_bands(proj, energies, nkpts, filtered, verbose=show_details)
+        if not show_details:
+            print_summary(results)
+        save_results(results, output)
+    except Exception as e:
+        print(f"Error: {e}")

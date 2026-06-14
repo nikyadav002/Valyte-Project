@@ -157,6 +157,7 @@ valyte effmass                        # Effective masses at VBM/CBM
 ```bash
 valyte supercell 2 2 2                # Generate a 2×2×2 supercell
 valyte kpt                            # Interactive k-point grid
+valyte kpt --spacing 0.04 --scheme gamma  # Batch k-point grid
 valyte band kpt-gen                   # High-symmetry k-path for bands
 valyte potcar                         # Generate POTCAR
 ```

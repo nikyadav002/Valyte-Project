@@ -1,6 +1,6 @@
 # Pre-processing
 
-Valyte provides three pre-processing utilities for setting up VASP calculations — supercell generation, interactive k-point grids, and automatic POTCAR generation.
+Valyte provides three pre-processing utilities for setting up VASP calculations — supercell generation, k-point grids, and automatic POTCAR generation.
 
 !!! tip "Band structure k-paths"
     For line-mode KPOINTS (band structure calculations), see [`valyte band kpt-gen`](band.md#1-generate-kpoints) instead.
@@ -30,20 +30,36 @@ valyte supercell 3 3 1 -i POSCAR_primitive -o POSCAR_3x3x1
 
 ---
 
-## K-Points — Interactive SCF grid
+## K-Points — SCF grid
 
-Generate a `KPOINTS` file for SCF or relaxation calculations interactively.
+Generate a `KPOINTS` file for SCF or relaxation calculations.
 
 ```bash
 valyte kpt
 ```
 
-The command will prompt for:
+With no flags, the command runs interactively and prompts for:
 
 1. **K-mesh scheme** — Monkhorst-Pack or Gamma
 2. **K-spacing** — in units of 2π/Å (e.g. `0.04`)
 
 The optimal k-grid dimensions are automatically calculated from the lattice vectors in your `POSCAR`.
+
+For batch scripts or cluster workflows, provide the settings directly:
+
+```bash
+valyte kpt --spacing 0.04 --scheme gamma
+valyte kpt -i POSCAR_relaxed -o KPOINTS_scf --spacing 0.03 --scheme mp
+valyte kpt --spacing 0.05 --no-potcar
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `-i`, `--input` | `POSCAR` | Input POSCAR file |
+| `-o`, `--output` | `KPOINTS` | Output KPOINTS file |
+| `--spacing` | `0.04` | K-spacing in 2π/Å |
+| `--scheme` | `gamma` | K-mesh scheme: `gamma` or `mp` |
+| `--no-potcar` | off | Skip automatic POTCAR generation |
 
 !!! tip
     A k-spacing of 0.03–0.05 (2π/Å) is typical for DFT calculations. Use smaller values (denser grids) for metals or accurate total energy convergence.

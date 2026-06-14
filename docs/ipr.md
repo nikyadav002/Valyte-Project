@@ -6,6 +6,13 @@ Compute the Inverse Participation Ratio (IPR) from a VASP `PROCAR` file to quant
 valyte ipr
 ```
 
+For non-interactive runs:
+
+```bash
+valyte ipr --bands 5-8
+valyte ipr -i PROCAR -b 5 8-10 13 -o defect_ipr.dat
+```
+
 ---
 
 ## What is IPR?
@@ -36,6 +43,25 @@ Running `valyte ipr` starts an interactive session:
 3. Prompts for **band indices** to analyze
 4. Optionally prints per-k-point IPR values
 5. Saves results to `ipr_procar.dat`
+
+---
+
+## Batch workflow
+
+Use `--bands` to run IPR analysis without prompts:
+
+```bash
+valyte ipr --bands 5-8
+valyte ipr --bands 5 8-10 13 --details
+valyte ipr -i PROCAR_defect -b 42 -o defect_state_ipr.dat
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `-i`, `--input` | `PROCAR` | Input PROCAR file |
+| `-b`, `--bands` | prompt | Band indices/ranges to analyze, e.g. `5 8-10 13` |
+| `-o`, `--output` | `ipr_procar.dat` | Output data filename |
+| `--details` | off | Print per-k-point IPR values |
 
 ---
 
