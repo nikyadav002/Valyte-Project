@@ -26,6 +26,7 @@ from valyte.geoopt import check_convergence
 from valyte.effmass import compute_effective_masses, print_results, save_results_dat
 from valyte.effmass_plot import plot_effective_mass
 from valyte.converge import run_converge
+from valyte.bandgap import get_bandgap
 
 
 def _normalize_element(symbol: str) -> str:
@@ -198,6 +199,10 @@ def main():
     effmass_parser.add_argument("--save-data", action="store_true", help="Save results to valyte_effmass.dat")
     effmass_parser.add_argument("--tol", type=float, default=1e-3, help="Degeneracy tolerance in eV (default: 1e-3)")
 
+    # Bandgap
+    bandgap_parser = subparsers.add_parser("bandgap", help="Print electronic bandgap")
+    bandgap_parser.add_argument("filepath", nargs="?", default=".", help="Path to vasprun.xml or directory containing it")
+
     args = parser.parse_args()
 
     if args.command == "dos":
@@ -336,6 +341,14 @@ def main():
                 no_plot=args.no_plot,
                 mag=args.mag,
             )
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.command == "bandgap":
+        try:
+            bg = get_bandgap(args.filepath)
+            print(f"Bandgap = {bg:.4f} eV")
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)
