@@ -41,6 +41,7 @@ A fit is produced for each high-symmetry direction in the band structure — so 
 | `--tol` | `1e-3` | Degeneracy tolerance in eV (for degenerate bands at extremum) |
 | `--plot` | off | Save parabolic fit plot |
 | `-o`, `--output` | `valyte_effmass.png` | Output plot filename (used with `--plot`) |
+| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save results to `valyte_effmass.dat` |
 
 ---
@@ -56,6 +57,9 @@ valyte effmass --npoints 5
 
 # Save parabolic fit figure
 valyte effmass --plot -o effmass.png
+
+# Vector output for publication
+valyte effmass --plot --format pdf
 
 # Export numerical results
 valyte effmass --save-data

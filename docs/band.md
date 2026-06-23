@@ -73,6 +73,7 @@ valyte band [options]
 | `--ylim` | `-4 4` | Energy window in eV, e.g. `--ylim -3 3` |
 | `-o`, `--output` | `valyte_band.png` | Output filename |
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
+| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save band data to `valyte_band.dat` |
 
 ```bash
@@ -134,7 +135,7 @@ valyte band --tricolor SPEC1 SPEC2 SPEC3 [options]
 | `--tricolors` | `#e74c3c #2ecc71 #3498db` | 3 matplotlib colors (red, green, blue) |
 | `--tri-labels` | spec strings | Labels shown at the triangle legend vertices |
 | `--lw` | `2.0` | Band line width |
-| `--ylim`, `-o`, `--font` | — | Same as standard band options |
+| `--ylim`, `-o`, `--font`, `--format` | — | Same as standard band options |
 | `--save-data` | off | Save band data to `valyte_band.dat` (same format as standard plot) |
 
 ### How the colors work
@@ -193,6 +194,7 @@ valyte band --spin-resolved [options]
 | `--ylim` | `-4 4` | Energy window in eV |
 | `-o`, `--output` | `valyte_band.png` | Output filename |
 | `--font` | `Arial` | Font family |
+| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--width` / `--height` | `4.0` | Figure dimensions in inches |
 | `--save-data` | off | Save band data to `valyte_band.dat` |
 
@@ -236,6 +238,7 @@ valyte band --spin-texture {sx,sy,sz} [options]
 | `--ylim` | `-4 4` | Energy window in eV |
 | `-o`, `--output` | `valyte_band_sz.png` | Output filename (auto-named by component if not set) |
 | `--font` | `Arial` | Font family |
+| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--width` / `--height` | `4.0` | Figure dimensions in inches |
 | `--lw` | `2.0` | Band line width |
 | `--save-data` | off | Save band energies to `valyte_band.dat` |

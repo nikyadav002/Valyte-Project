@@ -29,6 +29,13 @@ from valyte.converge import run_converge
 from valyte.bandgap import get_bandgap
 
 
+def _apply_format(output, fmt):
+    if not fmt:
+        return output
+    base, _ = os.path.splitext(output)
+    return f"{base}.{fmt}"
+
+
 def _normalize_element(symbol: str) -> str:
     if not symbol:
         return symbol
@@ -84,6 +91,7 @@ def main():
     dos_parser.add_argument("--width", type=float, default=5.0, help="Plot width in inches (default: 5)")
     dos_parser.add_argument("--height", type=float, default=4.0, help="Plot height in inches (default: 4)")
     dos_parser.add_argument("--save-data", action="store_true", help="Save DOS data to valyte_dos.dat")
+    dos_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
 
     # Supercell
     supercell_parser = subparsers.add_parser("supercell", help="Create a supercell")
@@ -121,6 +129,7 @@ def main():
     band_parser.add_argument("--width", type=float, default=4.0, help="Plot width in inches (default: 4)")
     band_parser.add_argument("--height", type=float, default=4.0, help="Plot height in inches (default: 4)")
     band_parser.add_argument("--save-data", action="store_true", help="Save band data to valyte_band.dat")
+    band_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
     band_parser.add_argument(
         "--spin-resolved", action="store_true",
         help="Plot spin-up and spin-down channels in distinct colors (blue/red). "
@@ -187,6 +196,7 @@ def main():
     conv_parser.add_argument("--save-data", action="store_true", help="Save parsed data to valyte_converge.dat")
     conv_parser.add_argument("--no-plot", action="store_true", help="Print terminal summary only")
     conv_parser.add_argument("--mag", action="store_true", help="Include magnetization subplot")
+    conv_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
 
     # Effective mass
     effmass_parser = subparsers.add_parser("effmass", help="Compute carrier effective masses at VBM/CBM")
@@ -198,6 +208,7 @@ def main():
     effmass_parser.add_argument("-o", "--output", default="valyte_effmass.png", help="Output plot filename (with --plot)")
     effmass_parser.add_argument("--save-data", action="store_true", help="Save results to valyte_effmass.dat")
     effmass_parser.add_argument("--tol", type=float, default=1e-3, help="Degeneracy tolerance in eV (default: 1e-3)")
+    effmass_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
 
     # Bandgap
     bandgap_parser = subparsers.add_parser("bandgap", help="Print electronic bandgap")
@@ -217,7 +228,7 @@ def main():
             plot_dos(
                 dos_data,
                 pdos_data,
-                out=args.output,
+                out=_apply_format(args.output, args.format),
                 xlim=tuple(args.xlim),
                 ylim=tuple(args.ylim) if args.ylim else None,
                 figsize=(args.width, args.height),
@@ -317,7 +328,7 @@ def main():
             print_results(results)
 
             if args.plot:
-                plot_effective_mass(results, output=args.output)
+                plot_effective_mass(results, output=_apply_format(args.output, args.format))
 
             if args.save_data:
                 save_results_dat(results)
@@ -336,7 +347,7 @@ def main():
                 fthresh=args.fthresh,
                 start=args.start,
                 end=args.end,
-                output=args.output,
+                output=_apply_format(args.output, args.format),
                 save_data=args.save_data,
                 no_plot=args.no_plot,
                 mag=args.mag,
@@ -385,7 +396,7 @@ def main():
                     plot_spin_texture_band_structure(
                         vasprun_path=target_path,
                         kpoints_path=kpoints_path,
-                        output=output,
+                        output=_apply_format(output, args.format),
                         ylim=tuple(args.ylim) if args.ylim else None,
                         figsize=(args.width, args.height),
                         font=args.font,
@@ -399,7 +410,7 @@ def main():
                     plot_orbital_band_structure(
                         vasprun_path=target_path,
                         kpoints_path=kpoints_path,
-                        output=output,
+                        output=_apply_format(output, args.format),
                         ylim=tuple(args.ylim) if args.ylim else None,
                         tricolor=args.tricolor,
                         tricolors=args.tricolors,
@@ -413,7 +424,7 @@ def main():
                     plot_band_structure(
                         vasprun_path=target_path,
                         kpoints_path=kpoints_path,
-                        output=args.output,
+                        output=_apply_format(args.output, args.format),
                         ylim=tuple(args.ylim) if args.ylim else None,
                         figsize=(args.width, args.height),
                         font=args.font,

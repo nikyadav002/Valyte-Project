@@ -23,6 +23,7 @@ Valyte turns raw VASP output into clean, publication-ready plots and analysis �
 - **Orbital & spin resolution** — Tricolor orbital-projected bands, spin-resolved channels, and non-collinear spin textures out of the box.
 - **Smart pre-processing** — Automatic high-symmetry k-paths (Bradley–Cracknell), supercell generation, and POTCAR handling.
 - **Data export** — Every plot command supports `--save-data` to export raw data for custom post-processing.
+- **Vector output** — `--format pdf|svg|png` writes journal-ready figures straight from the CLI.
 - **Beautiful defaults** — Gradient fills, adaptive legends, and clean typography that look great in papers without tweaking.
 
 ## 📸 Gallery

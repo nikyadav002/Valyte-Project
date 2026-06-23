@@ -147,6 +147,7 @@ valyte band [options]
 | `--ylim` | `-4 4` | Energy window in eV |
 | `-o`, `--output` | `valyte_band.png` | Output filename |
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
+| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save band data to `valyte_band.dat` |
 
 ### Tricolor mode
@@ -210,6 +211,9 @@ valyte band --spin-resolved --ylim -3 3
 # Spin texture
 valyte band --spin-texture sz --spin-cmap RdBu_r --ylim -2 2
 
+# Vector output for publication
+valyte band --format pdf
+
 # Export data
 valyte band --save-data
 ```
@@ -235,6 +239,7 @@ valyte dos [path/to/vasprun.xml] [options]
 | `--legend-cutoff` | `0.10` | Hide legend if max PDOS fraction < threshold |
 | `-o`, `--output` | `valyte_dos.png` | Output filename |
 | `--font` | `Arial` | Font family |
+| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save DOS data to `valyte_dos.dat` |
 
 Element/orbital formats: `Fe` (element total), `Fe(d)` or `Fe:d` (specific orbital), `-e Fe O` (multiple elements).
@@ -246,6 +251,7 @@ valyte dos
 valyte dos -e Fe O
 valyte dos -e "Fe(d)" "O(p)"
 valyte dos ./run --xlim -5 5 --fermi -o my_dos.png
+valyte dos -e Fe O --format svg
 valyte dos -e Fe O --save-data
 ```
 
@@ -311,6 +317,7 @@ valyte effmass [options]
 | `--tol` | `1e-3` | Degeneracy tolerance in eV |
 | `--plot` | off | Save parabolic fit plot |
 | `-o`, `--output` | `valyte_effmass.png` | Output plot filename (with `--plot`) |
+| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save results to `valyte_effmass.dat` |
 
 !!! warning "Requires a line-mode band structure calculation. SCF calculations will raise an error."
@@ -321,6 +328,7 @@ valyte effmass [options]
 valyte effmass
 valyte effmass --npoints 5
 valyte effmass --plot -o effmass.png
+valyte effmass --plot --format pdf
 valyte effmass --save-data
 ```
 
@@ -347,6 +355,7 @@ valyte converge [path] [options]
 | `--end` | last | Last ionic step to include |
 | `--no-plot` | off | Terminal summary only — no plot |
 | `-o`, `--output` | `valyte_converge.png` | Output plot filename |
+| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save data to `valyte_converge.dat` |
 
 **Examples:**
@@ -357,5 +366,6 @@ valyte converge --forces --stress
 valyte converge --electronic
 valyte converge --no-plot
 valyte converge /path/to/run --start 5 --end 30
+valyte converge --forces --format pdf
 valyte converge --forces -o converge.png --save-data
 ```

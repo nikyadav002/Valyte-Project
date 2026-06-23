@@ -26,6 +26,7 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 | `--legend-cutoff` | `0.10` | Hide the legend if the max PDOS contribution is below this fraction of total |
 | `-o`, `--output` | `valyte_dos.png` | Output filename |
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
+| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save DOS data to `valyte_dos.dat` |
 
 ---
@@ -66,6 +67,9 @@ valyte dos --pdos -e Fe O
 
 # Scale down a very tall DOS
 valyte dos --scale 3 --ylim 0 10
+
+# Vector output for publication
+valyte dos -e Fe O --format pdf
 
 # Save raw data alongside the plot
 valyte dos -e Fe O --save-data

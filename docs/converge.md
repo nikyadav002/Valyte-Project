@@ -28,6 +28,7 @@ The default mode (no extra flags) needs only `OSZICAR` and produces a 2-panel pl
 | `--end` | last | Last ionic step to include |
 | `--no-plot` | off | Print terminal summary only — no plot generated |
 | `-o`, `--output` | `valyte_converge.png` | Output plot filename |
+| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save parsed data to `valyte_converge.dat` |
 
 ---
@@ -89,6 +90,9 @@ valyte converge --start 10 --end 50
 
 # SCF convergence view
 valyte converge --electronic
+
+# Vector output for publication
+valyte converge --forces --format pdf
 
 # Save the plot and data
 valyte converge --forces -o converge.png --save-data
