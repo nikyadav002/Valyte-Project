@@ -149,6 +149,7 @@ valyte band [options]
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save band data to `valyte_band.dat` |
+| `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 ### Tricolor mode
 
@@ -243,6 +244,7 @@ valyte dos [path/to/vasprun.xml] [options]
 | `--save-data` | off | Save DOS data to `valyte_dos.dat` |
 | `--panels` | off | Split DOS into stacked panels (one per element) |
 | `--panel-by` | `element` | Grouping for panels: `element` or `orbital` |
+| `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 Element/orbital formats: `Fe` (element total), `Fe(d)` or `Fe:d` (specific orbital), `-e Fe O` (multiple elements).
 
@@ -324,6 +326,7 @@ valyte effmass [options]
 | `-o`, `--output` | `valyte_effmass.png` | Output plot filename (with `--plot`) |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save results to `valyte_effmass.dat` |
+| `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 !!! warning "Requires a line-mode band structure calculation. SCF calculations will raise an error."
 
@@ -362,6 +365,7 @@ valyte converge [path] [options]
 | `-o`, `--output` | `valyte_converge.png` | Output plot filename |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save data to `valyte_converge.dat` |
+| `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 **Examples:**
 

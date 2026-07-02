@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 
 def plot_effective_mass(results, output="valyte_effmass.png",
-                        figsize=(8, 4), dpi=400, font="Arial"):
+                        figsize=(8, 4), dpi=400, font="Arial", bold=True):
     """Plot parabolic fits overlaid on band data near VBM and CBM.
 
     Parameters
@@ -23,9 +23,11 @@ def plot_effective_mass(results, output="valyte_effmass.png",
         Output resolution.
     font : str
         Font family name.
+    bold : bool
+        If True, use bold font weight (default). If False, use normal weight.
     """
     if results.get("is_metal", False):
-        print("No plot generated — system is metallic.")
+        print("No plot generated - system is metallic.")
         return
 
     hole_masses = results.get("hole_masses", [])
@@ -35,20 +37,20 @@ def plot_effective_mass(results, output="valyte_effmass.png",
         print("No effective mass fits to plot.")
         return
 
-    # ── Matplotlib style (matching Valyte conventions) ──────────────
     font_map = {
         "arial": "Arial",
         "helvetica": "Helvetica",
         "times": "Times New Roman",
         "times new roman": "Times New Roman",
     }
+    _weight = "bold" if bold else "normal"
     font = font_map.get(font.lower(), "Arial")
     mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.4
-    mpl.rcParams["font.weight"] = "bold"
+    mpl.rcParams["axes.linewidth"] = 1.4 if bold else 0.8
+    mpl.rcParams["font.weight"] = _weight
     mpl.rcParams["font.size"] = 14
-    mpl.rcParams["xtick.major.width"] = 1.2
-    mpl.rcParams["ytick.major.width"] = 1.2
+    mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
+    mpl.rcParams["ytick.major.width"] = 1.2 if bold else 0.8
 
     has_holes = len(hole_masses) > 0
     has_electrons = len(electron_masses) > 0
@@ -73,12 +75,12 @@ def plot_effective_mass(results, output="valyte_effmass.png",
     # ── VBM panel ────────────────────────────────────────────────────
     if ax_vbm is not None and hole_masses:
         _plot_panel(ax_vbm, hole_masses, color_vbm, linestyles, markers,
-                    "Hole (VBM)")
+                    "Hole (VBM)", _weight)
 
     # ── CBM panel ────────────────────────────────────────────────────
     if ax_cbm is not None and electron_masses:
         _plot_panel(ax_cbm, electron_masses, color_cbm, linestyles, markers,
-                    "Electron (CBM)")
+                    "Electron (CBM)", _weight)
 
     plt.tight_layout(pad=1.5)
     plt.savefig(output, dpi=dpi, bbox_inches="tight")
@@ -86,7 +88,7 @@ def plot_effective_mass(results, output="valyte_effmass.png",
     print(f"Saved: {output}")
 
 
-def _plot_panel(ax, masses, base_color, linestyles, markers, title):
+def _plot_panel(ax, masses, base_color, linestyles, markers, title, _weight="bold"):
     """Plot a single panel (VBM or CBM) with fit curves."""
     # Slightly vary the color for different directions
     from matplotlib.colors import to_rgb
@@ -133,7 +135,7 @@ def _plot_panel(ax, masses, base_color, linestyles, markers, title):
             ann_text,
             xy=(x_ann, y_ann),
             fontsize=9,
-            fontweight="bold",
+            fontweight=_weight,
             color=color_hex,
             xytext=(5, 8 + 12 * i),
             textcoords="offset points",
@@ -141,9 +143,9 @@ def _plot_panel(ax, masses, base_color, linestyles, markers, title):
                       edgecolor=color_hex, alpha=0.85, linewidth=0.8),
         )
 
-    ax.set_xlabel("k (1/Å)", fontsize=14, fontweight="bold", labelpad=6)
-    ax.set_ylabel("Energy (eV)", fontsize=14, fontweight="bold", labelpad=6)
-    ax.set_title(title, fontsize=13, fontweight="bold", pad=8)
+    ax.set_xlabel("k (1/Å)", fontsize=14, fontweight=_weight, labelpad=6)
+    ax.set_ylabel("Energy (eV)", fontsize=14, fontweight=_weight, labelpad=6)
+    ax.set_title(title, fontsize=13, fontweight=_weight, pad=8)
 
     ax.axhline(0, color="k", lw=0.6, ls="--", alpha=0.4)
     ax.axvline(0, color="k", lw=0.6, ls="--", alpha=0.4)

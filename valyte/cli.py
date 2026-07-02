@@ -96,6 +96,7 @@ def main():
                             help="Split DOS into stacked panels (one per element)")
     dos_parser.add_argument("--panel-by", choices=["element", "orbital"], default="element",
                             help="Grouping mode for panels: 'element' (default) or 'orbital'")
+    dos_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
 
     # Supercell
     supercell_parser = subparsers.add_parser("supercell", help="Create a supercell")
@@ -148,6 +149,7 @@ def main():
         "--spin-cmap", default="seismic",
         help="Colormap for --spin-texture (default: seismic).",
     )
+    band_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
 
     # Band KPOINTS generation
     kpt_gen_parser = band_subparsers.add_parser("kpt-gen", help="Generate KPOINTS for band structure")
@@ -201,6 +203,7 @@ def main():
     conv_parser.add_argument("--no-plot", action="store_true", help="Print terminal summary only")
     conv_parser.add_argument("--mag", action="store_true", help="Include magnetization subplot")
     conv_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
+    conv_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
 
     # Effective mass
     effmass_parser = subparsers.add_parser("effmass", help="Compute carrier effective masses at VBM/CBM")
@@ -213,6 +216,7 @@ def main():
     effmass_parser.add_argument("--save-data", action="store_true", help="Save results to valyte_effmass.dat")
     effmass_parser.add_argument("--tol", type=float, default=1e-3, help="Degeneracy tolerance in eV (default: 1e-3)")
     effmass_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
+    effmass_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
 
     # Bandgap
     bandgap_parser = subparsers.add_parser("bandgap", help="Print electronic bandgap")
@@ -247,6 +251,7 @@ def main():
                     scale_factor=args.scale,
                     save_data=args.save_data,
                     group_by=args.panel_by,
+                    bold=not args.no_bold,
                 )
             else:
                 plot_dos(
@@ -263,6 +268,7 @@ def main():
                     legend_cutoff=args.legend_cutoff,
                     scale_factor=args.scale,
                     save_data=args.save_data,
+                    bold=not args.no_bold,
                 )
         except Exception as e:
             print(f"Error: {e}")
@@ -352,7 +358,7 @@ def main():
             print_results(results)
 
             if args.plot:
-                plot_effective_mass(results, output=_apply_format(args.output, args.format))
+                plot_effective_mass(results, output=_apply_format(args.output, args.format), bold=not args.no_bold)
 
             if args.save_data:
                 save_results_dat(results)
@@ -375,6 +381,7 @@ def main():
                 save_data=args.save_data,
                 no_plot=args.no_plot,
                 mag=args.mag,
+                bold=not args.no_bold,
             )
         except Exception as e:
             print(f"Error: {e}")
@@ -427,6 +434,7 @@ def main():
                         save_data=args.save_data,
                         spin_component=args.spin_texture,
                         cmap=args.spin_cmap,
+                        bold=not args.no_bold,
                     )
                 elif args.tricolor:
                     tri_labels = args.tri_labels if args.tri_labels else list(args.tricolor)
@@ -443,6 +451,7 @@ def main():
                         figsize=(args.width, args.height),
                         font=args.font,
                         save_data=args.save_data,
+                        bold=not args.no_bold,
                     )
                 else:
                     plot_band_structure(
@@ -454,6 +463,7 @@ def main():
                         font=args.font,
                         save_data=args.save_data,
                         spin_resolved=args.spin_resolved,
+                        bold=not args.no_bold,
                     )
             except Exception:
                 import traceback

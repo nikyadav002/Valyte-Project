@@ -233,7 +233,7 @@ def _save_band_dat(distances, energies, ticks, filepath):
 
 def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png",
                         ylim=None, figsize=(4, 4), dpi=400, font="Arial",
-                        save_data=False, spin_resolved=False):
+                        save_data=False, spin_resolved=False, bold=True):
     """Plot the electronic band structure from a VASP vasprun.xml."""
 
     if os.path.isdir(vasprun_path):
@@ -245,13 +245,14 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
         "times": "Times New Roman",
         "times new roman": "Times New Roman",
     }
+    _weight = "bold" if bold else "normal"
     font = font_map.get(font.lower(), "Arial")
     mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.4
-    mpl.rcParams["font.weight"] = "bold"
+    mpl.rcParams["axes.linewidth"] = 1.4 if bold else 0.8
+    mpl.rcParams["font.weight"] = _weight
     mpl.rcParams["font.size"] = 14
-    mpl.rcParams["xtick.major.width"] = 1.2
-    mpl.rcParams["ytick.major.width"] = 1.2
+    mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
+    mpl.rcParams["ytick.major.width"] = 1.2 if bold else 0.8
 
     try:
         vr = BSVasprun(vasprun_path, parse_projected_eigen=False)
@@ -322,14 +323,14 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
 
     ax.set_xticks(ticks["distance"])
     clean_labels = [(l or "").replace("$\\mid$", "|") for l in ticks["label"]]
-    ax.set_xticklabels(clean_labels, fontsize=14, fontweight="bold")
+    ax.set_xticklabels(clean_labels, fontsize=14, fontweight=_weight)
 
     for d in ticks["distance"]:
         ax.axvline(d, color="k", lw=0.8, ls="-", alpha=0.3)
 
     ax.axhline(0, color="k", lw=0.8, ls="--", alpha=0.5)
 
-    ax.set_ylabel("Energy (eV)", fontsize=16, fontweight="bold", labelpad=8)
+    ax.set_ylabel("Energy (eV)", fontsize=16, fontweight=_weight, labelpad=8)
     if ylim:
         ax.set_ylim(ylim)
         yticks = np.arange(np.ceil(ylim[0]), np.floor(ylim[1]) + 1, 1)
@@ -361,6 +362,7 @@ def plot_orbital_band_structure(
     lw=2.0,
     font="Arial",
     save_data=False,
+    bold=True,
 ):
     """Plot orbital-resolved band structure with a tricolor RGB map.
 
@@ -386,13 +388,14 @@ def plot_orbital_band_structure(
         "times": "Times New Roman",
         "times new roman": "Times New Roman",
     }
+    _weight = "bold" if bold else "normal"
     font = font_map.get(font.lower(), "Arial")
     mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.4
-    mpl.rcParams["font.weight"] = "bold"
+    mpl.rcParams["axes.linewidth"] = 1.4 if bold else 0.8
+    mpl.rcParams["font.weight"] = _weight
     mpl.rcParams["font.size"] = 14
-    mpl.rcParams["xtick.major.width"] = 1.2
-    mpl.rcParams["ytick.major.width"] = 1.2
+    mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
+    mpl.rcParams["ytick.major.width"] = 1.2 if bold else 0.8
 
     if tricolor is None:
         tricolor = ["s", "p", "d"]
@@ -476,14 +479,14 @@ def plot_orbital_band_structure(
 
     ax.set_xticks(ticks["distance"])
     clean_labels = [(l or "").replace("$\\mid$", "|") for l in ticks["label"]]
-    ax.set_xticklabels(clean_labels, fontsize=14, fontweight="bold")
+    ax.set_xticklabels(clean_labels, fontsize=14, fontweight=_weight)
 
     for d in ticks["distance"]:
         ax.axvline(d, color="k", lw=0.8, ls="-", alpha=0.3)
 
     ax.axhline(0, color="k", lw=0.8, ls="--", alpha=0.5)
 
-    ax.set_ylabel("Energy (eV)", fontsize=16, fontweight="bold", labelpad=8)
+    ax.set_ylabel("Energy (eV)", fontsize=16, fontweight=_weight, labelpad=8)
     if ylim:
         ax.set_ylim(ylim)
         ax.set_yticks(np.arange(np.ceil(ylim[0]), np.floor(ylim[1]) + 1, 1))
@@ -515,6 +518,7 @@ def plot_spin_texture_band_structure(
     spin_component="sz",
     cmap="seismic",
     lw=1.5,
+    bold=True,
 ):
     """Plot non-collinear band structure colored by a spin texture component (Sx, Sy, or Sz).
 
@@ -543,13 +547,14 @@ def plot_spin_texture_band_structure(
         "times": "Times New Roman",
         "times new roman": "Times New Roman",
     }
+    _weight = "bold" if bold else "normal"
     font = font_map.get(font.lower(), "Arial")
     mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.4
-    mpl.rcParams["font.weight"] = "bold"
+    mpl.rcParams["axes.linewidth"] = 1.4 if bold else 0.8
+    mpl.rcParams["font.weight"] = _weight
     mpl.rcParams["font.size"] = 14
-    mpl.rcParams["xtick.major.width"] = 1.2
-    mpl.rcParams["ytick.major.width"] = 1.2
+    mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
+    mpl.rcParams["ytick.major.width"] = 1.2 if bold else 0.8
 
     try:
         vr = BSVasprun(vasprun_path, parse_projected_eigen=True)
@@ -623,19 +628,19 @@ def plot_spin_texture_band_structure(
     sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
     cbar = plt.colorbar(sm, ax=ax, pad=0.02, shrink=0.8)
-    cbar.set_label(comp_label, fontsize=13, fontweight="bold")
+    cbar.set_label(comp_label, fontsize=13, fontweight=_weight)
     cbar.ax.tick_params(labelsize=10)
 
     ax.set_xticks(ticks["distance"])
     clean_labels = [(l or "").replace("$\\mid$", "|") for l in ticks["label"]]
-    ax.set_xticklabels(clean_labels, fontsize=14, fontweight="bold")
+    ax.set_xticklabels(clean_labels, fontsize=14, fontweight=_weight)
 
     for d in ticks["distance"]:
         ax.axvline(d, color="k", lw=0.8, ls="-", alpha=0.3)
 
     ax.axhline(0, color="k", lw=0.8, ls="--", alpha=0.5)
 
-    ax.set_ylabel("Energy (eV)", fontsize=16, fontweight="bold", labelpad=8)
+    ax.set_ylabel("Energy (eV)", fontsize=16, fontweight=_weight, labelpad=8)
     if ylim:
         ax.set_ylim(ylim)
         ax.set_yticks(np.arange(np.ceil(ylim[0]), np.floor(ylim[1]) + 1, 1))

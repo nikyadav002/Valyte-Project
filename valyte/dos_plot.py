@@ -220,6 +220,7 @@ def plot_dos(
     legend_cutoff=0.10,
     scale_factor=1.0,
     save_data=False,
+    bold=True,
 ):
     """Plot total and projected DOS with the Valyte style."""
 
@@ -229,11 +230,22 @@ def plot_dos(
         "times": "Times New Roman",
         "times new roman": "Times New Roman",
     }
+    _weight = "bold" if bold else "normal"
     font = font_map.get(font.lower(), "Arial")
     mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.4
-    mpl.rcParams["font.weight"] = "bold"
+    mpl.rcParams["axes.linewidth"] = 1.4 if bold else 0.8
+    mpl.rcParams["font.weight"] = _weight
     mpl.rcParams["font.size"] = 12
+    mpl.rcParams["xtick.direction"] = "in"
+    mpl.rcParams["ytick.direction"] = "in"
+    mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
+    mpl.rcParams["ytick.major.width"] = 1.2 if bold else 0.8
+    mpl.rcParams["xtick.minor.width"] = 0.8 if bold else 0.6
+    mpl.rcParams["ytick.minor.width"] = 0.8 if bold else 0.6
+    mpl.rcParams["xtick.major.size"] = 4 if bold else 5
+    mpl.rcParams["ytick.major.size"] = 4 if bold else 5
+    mpl.rcParams["xtick.minor.size"] = 2 if bold else 3
+    mpl.rcParams["ytick.minor.size"] = 2 if bold else 3
 
     plt.style.use("default")
     fig, ax = plt.subplots(figsize=figsize)
@@ -396,13 +408,15 @@ def plot_dos(
         ax.set_ylim(*ylim)
 
     ax.set_xlim(*xlim)
-    ax.set_xlabel("Energy (eV)", fontsize=14, weight="bold", labelpad=6)
-    ax.set_ylabel("Density of States", fontsize=14, weight="bold", labelpad=6)
+    ax.set_xlabel("Energy (eV)", fontsize=14, weight=_weight, labelpad=6)
+    ax.set_ylabel("Density of States", fontsize=14, weight=_weight, labelpad=6)
 
     xticks = np.arange(np.ceil(xlim[0]), np.floor(xlim[1]) + 1, 1)
     ax.set_xticks(xticks)
     tick_labels = [f"{int(x)}" if x == int(x) else f"{x}" for x in xticks]
-    ax.set_xticklabels(tick_labels, fontweight="bold")
+    ax.set_xticklabels(tick_labels, fontweight=_weight)
+    ax.tick_params(axis="x", direction="in", which="both", bottom=True, top=False)
+    ax.tick_params(axis="y", which="both", left=False, right=False)
     ax.set_yticks([])
 
     if len(lines) > 0:
@@ -418,7 +432,7 @@ def plot_dos(
             handletextpad=0.6,
         )
         for text in legend.get_texts():
-            text.set_fontweight("bold")
+            text.set_fontweight(_weight)
 
     ax.xaxis.set_minor_locator(AutoMinorLocator(2))
     plt.tight_layout(pad=0.4)
@@ -444,6 +458,7 @@ def plot_dos_panels(
     scale_factor=1.0,
     save_data=False,
     group_by="element",
+    bold=True,
 ):
     """Plot DOS as vertically stacked panels — one per element (or per orbital).
 
@@ -461,10 +476,11 @@ def plot_dos_panels(
         "times": "Times New Roman",
         "times new roman": "Times New Roman",
     }
+    _weight = "bold" if bold else "normal"
     font = font_map.get(font.lower(), "Arial")
     mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.2
-    mpl.rcParams["font.weight"] = "bold"
+    mpl.rcParams["axes.linewidth"] = 1.2 if bold else 0.8
+    mpl.rcParams["font.weight"] = _weight
     mpl.rcParams["font.size"] = 11
 
     plt.style.use("default")
@@ -637,7 +653,7 @@ def plot_dos_panels(
         ax.text(
             0.02, 0.88, panel_label,
             transform=ax.transAxes,
-            fontsize=13, fontweight="bold",
+            fontsize=13, fontweight=_weight,
             va="top", ha="left",
             bbox=dict(
                 facecolor="white", edgecolor="none",
@@ -657,9 +673,10 @@ def plot_dos_panels(
                 borderpad=0.3,
             )
             for t in leg.get_texts():
-                t.set_fontweight("bold")
+                t.set_fontweight(_weight)
 
-        # Remove x tick labels from all panels except the bottom
+        ax.tick_params(axis="x", direction="in", which="both", bottom=True, top=False)
+        ax.tick_params(axis="y", which="both", left=False, right=False)
         if idx < n_panels - 1:
             ax.tick_params(axis="x", labelbottom=False)
 
@@ -675,14 +692,14 @@ def plot_dos_panels(
     xticks = np.arange(np.ceil(xlim[0]), np.floor(xlim[1]) + 1, 1)
     bottom_ax.set_xticks(xticks)
     tick_labels = [f"{int(x)}" if x == int(x) else f"{x}" for x in xticks]
-    bottom_ax.set_xticklabels(tick_labels, fontweight="bold")
-    bottom_ax.set_xlabel("Energy (eV)", fontsize=14, weight="bold", labelpad=6)
+    bottom_ax.set_xticklabels(tick_labels, fontweight=_weight)
+    bottom_ax.set_xlabel("Energy (eV)", fontsize=14, weight=_weight, labelpad=6)
 
     # Shared Y-label in the centre
     fig.text(
         0.01, 0.5, "Density of States",
         va="center", ha="left", rotation="vertical",
-        fontsize=14, fontweight="bold",
+        fontsize=14, fontweight=_weight,
     )
 
     fig.subplots_adjust(left=0.10, right=0.97, top=0.97, bottom=0.08)

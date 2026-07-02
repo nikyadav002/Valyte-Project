@@ -75,6 +75,7 @@ valyte band [options]
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save band data to `valyte_band.dat` |
+| `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 ```bash
 # Basic plot from current directory
@@ -197,6 +198,7 @@ valyte band --spin-resolved [options]
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--width` / `--height` | `4.0` | Figure dimensions in inches |
 | `--save-data` | off | Save band data to `valyte_band.dat` |
+| `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 ### Examples
 
@@ -242,6 +244,7 @@ valyte band --spin-texture {sx,sy,sz} [options]
 | `--width` / `--height` | `4.0` | Figure dimensions in inches |
 | `--lw` | `2.0` | Band line width |
 | `--save-data` | off | Save band energies to `valyte_band.dat` |
+| `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 ### How it works
 

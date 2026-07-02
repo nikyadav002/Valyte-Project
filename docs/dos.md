@@ -30,6 +30,7 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 | `--save-data` | off | Save DOS data to `valyte_dos.dat` |
 | `--panels` | off | Split DOS into vertically stacked panels (one per element) |
 | `--panel-by` | `element` | Grouping mode for panels: `element` or `orbital` |
+| `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 ---
 

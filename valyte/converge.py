@@ -383,32 +383,35 @@ def print_summary(steps, outcar_info, force_steps=None, fthresh=0.02):
 
 # ── Matplotlib style ──────────────────────────────────────────────────────────
 
-def _apply_style(font="Arial"):
+def _apply_style(font="Arial", bold=True):
+    _weight = "bold" if bold else "normal"
     font_map = {
         "arial": "Arial", "helvetica": "Helvetica",
         "times": "Times New Roman", "times new roman": "Times New Roman",
     }
     mpl.rcParams["font.family"]          = font_map.get(font.lower(), "Arial")
-    mpl.rcParams["axes.linewidth"]       = 1.4
-    mpl.rcParams["font.weight"]          = "bold"
+    mpl.rcParams["axes.linewidth"]       = 1.4 if bold else 0.8
+    mpl.rcParams["font.weight"]          = _weight
     mpl.rcParams["font.size"]            = 12
-    mpl.rcParams["xtick.major.width"]    = 1.2
-    mpl.rcParams["ytick.major.width"]    = 1.2
+    mpl.rcParams["xtick.major.width"]    = 1.2 if bold else 0.8
+    mpl.rcParams["ytick.major.width"]    = 1.2 if bold else 0.8
     mpl.rcParams["xtick.direction"]      = "in"
     mpl.rcParams["ytick.direction"]      = "in"
     mpl.rcParams["xtick.minor.visible"]  = True
     mpl.rcParams["ytick.minor.visible"]  = True
-    mpl.rcParams["xtick.minor.width"]    = 0.8
-    mpl.rcParams["ytick.minor.width"]    = 0.8
+    mpl.rcParams["xtick.minor.width"]    = 0.8 if bold else 0.6
+    mpl.rcParams["ytick.minor.width"]    = 0.8 if bold else 0.6
+    return _weight
 
 
 _PRIMARY = "#4b0082"
 _REFLINE = "#888888"
 
 
-def _style_ax(ax):
+def _style_ax(ax, bold=True):
+    lw = 1.4 if bold else 0.8
     for sp in ax.spines.values():
-        sp.set_linewidth(1.4)
+        sp.set_linewidth(lw)
     ax.tick_params(which="both", direction="in", top=True, right=True)
 
 
@@ -425,10 +428,10 @@ def _thresh_label(ax, y, label, log=False):
 
 def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
                show_mag=False, show_stress=False, start=1, end=None,
-               output="valyte_converge.png", dpi=400, font="Arial"):
+               output="valyte_converge.png", dpi=400, font="Arial", bold=True):
 
     plt.style.use("default")
-    _apply_style(font)
+    _weight = _apply_style(font, bold=bold)
 
     # Complete ionic steps only
     ionic = [s for s in steps if not s.get("_incomplete") and s["E0"] is not None]
@@ -485,8 +488,8 @@ def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
     # Panel 1 — Energy
     ax = axes[row]; row += 1
     ax.plot(xs, e0s, color=_PRIMARY, lw=1.6, marker="o", ms=3.5, zorder=3)
-    ax.set_ylabel("Energy (eV)", fontweight="bold")
-    _style_ax(ax)
+    ax.set_ylabel("Energy (eV)", fontweight=_weight)
+    _style_ax(ax, bold=bold)
 
     # Panel 2 — |dE|
     ax = axes[row]; row += 1
@@ -495,8 +498,8 @@ def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
     if vx:
         ax.plot(vx, vd, color=_PRIMARY, lw=1.6, marker="o", ms=3.5, zorder=3)
     ax.set_yscale("log")
-    ax.set_ylabel("|ΔE| (eV)", fontweight="bold")
-    _style_ax(ax)
+    ax.set_ylabel("|ΔE| (eV)", fontweight=_weight)
+    _style_ax(ax, bold=bold)
     if ethresh > 0:
         ax.axhline(ethresh, color=_REFLINE, lw=1.0, ls="--", zorder=1)
         xlim = ax.get_xlim()
@@ -512,8 +515,8 @@ def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
         if fy:
             ax.plot(fx, fy, color=_PRIMARY, lw=1.6, marker="o", ms=3.5, zorder=3)
         ax.set_yscale("log")
-        ax.set_ylabel("Max |F| (eV/Å)", fontweight="bold")
-        _style_ax(ax)
+        ax.set_ylabel("Max |F| (eV/Å)", fontweight=_weight)
+        _style_ax(ax, bold=bold)
         if fthresh > 0:
             ax.axhline(fthresh, color=_REFLINE, lw=1.0, ls="--", zorder=1)
             xlim = ax.get_xlim()
@@ -529,8 +532,8 @@ def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
         if py:
             ax.plot(px, py, color=_PRIMARY, lw=1.6, marker="o", ms=3.5, zorder=3)
         ax.axhline(0, color=_REFLINE, lw=1.0, ls="--", zorder=1)
-        ax.set_ylabel("Pressure (kB)", fontweight="bold")
-        _style_ax(ax)
+        ax.set_ylabel("Pressure (kB)", fontweight=_weight)
+        _style_ax(ax, bold=bold)
 
     # Panel (optional) — Magnetization
     if has_mag:
@@ -539,10 +542,10 @@ def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
         my = [s["mag"]    for s in ionic if s["mag"] is not None]
         ax.plot(mx, my, color="#e63946", lw=1.6, marker="o", ms=3.5, zorder=3)
         ax.axhline(0, color=_REFLINE, lw=1.0, ls="--", zorder=1)
-        ax.set_ylabel("Mag. (μ_B)", fontweight="bold")
-        _style_ax(ax)
+        ax.set_ylabel("Mag. (μ_B)", fontweight=_weight)
+        _style_ax(ax, bold=bold)
 
-    axes[-1].set_xlabel("Ionic Step", fontweight="bold")
+    axes[-1].set_xlabel("Ionic Step", fontweight=_weight)
     axes[-1].set_xlim(min(xs) - 0.5, max(xs) + 0.5)
 
     plt.savefig(output, dpi=dpi, bbox_inches="tight")
@@ -553,10 +556,10 @@ def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
 # ── Electronic convergence plot ───────────────────────────────────────────────
 
 def plot_electronic(steps, ethresh=None, output="valyte_converge.png",
-                    dpi=400, font="Arial"):
+                    dpi=400, font="Arial", bold=True):
 
     plt.style.use("default")
-    _apply_style(font)
+    _weight = _apply_style(font, bold=bold)
 
     cumulative_x, cumulative_y = [], []
     boundaries = []
@@ -597,9 +600,9 @@ def plot_electronic(steps, ethresh=None, output="valyte_converge.png",
                 ha="right", va="bottom", fontsize=9,
                 color=_REFLINE, fontstyle="italic")
 
-    ax.set_xlabel("Electronic Step", fontweight="bold")
-    ax.set_ylabel("|ΔE| (eV)", fontweight="bold")
-    _style_ax(ax)
+    ax.set_xlabel("Electronic Step", fontweight=_weight)
+    ax.set_ylabel("|ΔE| (eV)", fontweight=_weight)
+    _style_ax(ax, bold=bold)
 
     plt.tight_layout()
     plt.savefig(output, dpi=dpi, bbox_inches="tight")
@@ -633,7 +636,7 @@ def save_converge_dat(steps, force_steps=None, filepath="valyte_converge.dat"):
 def run_converge(path=".", electronic=False, forces=False, stress=False,
                  ethresh=1e-4, fthresh=0.02, start=1, end=None,
                  output="valyte_converge.png", save_data=False,
-                 no_plot=False, mag=False):
+                 no_plot=False, mag=False, bold=True):
 
     # Resolve paths
     if os.path.isfile(path):
@@ -700,7 +703,7 @@ def run_converge(path=".", electronic=False, forces=False, stress=False,
 
     if electronic:
         ediff = outcar_info.get("ediff") or ethresh
-        plot_electronic(steps, ethresh=ediff, output=output)
+        plot_electronic(steps, ethresh=ediff, output=output, bold=bold)
     else:
         plot_ionic(
             steps,
@@ -712,6 +715,7 @@ def run_converge(path=".", electronic=False, forces=False, stress=False,
             start=start,
             end=end,
             output=output,
+            bold=bold,
         )
 
     if save_data:

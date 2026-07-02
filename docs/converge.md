@@ -30,6 +30,7 @@ The default mode (no extra flags) needs only `OSZICAR` and produces a 2-panel pl
 | `-o`, `--output` | `valyte_converge.png` | Output plot filename |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save parsed data to `valyte_converge.dat` |
+| `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 ---
 
