@@ -28,6 +28,8 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save DOS data to `valyte_dos.dat` |
+| `--panels` | off | Split DOS into vertically stacked panels (one per element) |
+| `--panel-by` | `element` | Grouping mode for panels: `element` or `orbital` |
 
 ---
 
@@ -77,6 +79,32 @@ valyte dos -e Fe O --save-data
 
 ---
 
+## Panels
+
+Use `--panels` to split the DOS into a vertically stacked figure with one panel per element. Each panel shows the orbital breakdown for that element, with a semi-transparent total DOS backdrop for context.
+
+```bash
+# One panel per element (default grouping)
+valyte dos --panels
+
+# Group by orbital instead — one panel per s, p, d channel
+valyte dos --panels --panel-by orbital
+
+# Panels with Fermi line and specific elements
+valyte dos --panels --fermi -e Fe O
+
+# Panels without total DOS backdrop
+valyte dos --panels --pdos
+
+# Custom energy range and PDF output
+valyte dos --panels --xlim -4 4 --format pdf
+```
+
+!!! tip "When to use panels"
+    Panels are most useful for multi-element systems (e.g., ternary or quaternary compounds) where a single-axis DOS plot becomes crowded. Each element gets its own y-axis scaling, making small contributions visible.
+
+---
+
 ## Exported data format (`valyte_dos.dat`)
 
 A plain-text, whitespace-delimited file with one row per energy point:
@@ -105,3 +133,6 @@ A plain-text, whitespace-delimited file with one row per energy point:
 
 **Orbital-resolved by default**
 :   When no `-e` flag is given, Valyte plots all available elements broken down by s, p, d (and f if present) orbitals automatically.
+
+**Panel mode**
+:   The `--panels` flag tiles each element (or orbital) into its own subplot with independent y-scaling, making it easy to compare contributions that differ by orders of magnitude.

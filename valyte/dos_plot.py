@@ -427,3 +427,277 @@ def plot_dos(
 
     if save_data:
         _save_dos_dat(dos, pdos, items_to_plot, "valyte_dos.dat")
+
+
+def plot_dos_panels(
+    dos,
+    pdos,
+    out="valyte_dos_panels.png",
+    xlim=(-6, 6),
+    ylim=None,
+    figsize=None,
+    dpi=400,
+    font="Arial",
+    show_fermi=False,
+    show_total=True,
+    plotting_config=None,
+    scale_factor=1.0,
+    save_data=False,
+    group_by="element",
+):
+    """Plot DOS as vertically stacked panels — one per element (or per orbital).
+
+    Parameters
+    ----------
+    group_by : str
+        ``"element"`` (default) — one panel per element, orbitals shown within.
+        ``"orbital"`` — one panel per angular-momentum channel (s, p, d, f),
+        elements shown within each.
+    """
+
+    font_map = {
+        "arial": "Arial",
+        "helvetica": "Helvetica",
+        "times": "Times New Roman",
+        "times new roman": "Times New Roman",
+    }
+    font = font_map.get(font.lower(), "Arial")
+    mpl.rcParams["font.family"] = font
+    mpl.rcParams["axes.linewidth"] = 1.2
+    mpl.rcParams["font.weight"] = "bold"
+    mpl.rcParams["font.size"] = 11
+
+    plt.style.use("default")
+
+    palette = [
+        "#e63946", "#457b9d", "#2a9d8f", "#f4a261", "#6a4c93",
+        "#8ac926", "#1982c4", "#ca6702", "#ff595e", "#6a994e",
+        "#b5179e", "#219ebc", "#9b2226", "#606c38", "#0077b6",
+        "#bb3e03", "#005f73", "#ee9b00", "#7209b7", "#94d2bd",
+    ]
+
+    is_spin_polarized = Spin.down in dos.densities
+    x_mask = (dos.energies >= xlim[0]) & (dos.energies <= xlim[1])
+
+    # ------------------------------------------------------------------
+    # Build panel groups: list of (panel_label, [(series_label, y_up, y_down), ...])
+    # ------------------------------------------------------------------
+    panels = []
+
+    if group_by == "orbital":
+        # Collect all orbital channels across all elements
+        all_orbitals = []
+        for el, el_pdos in pdos.items():
+            for orb in el_pdos:
+                if orb not in all_orbitals:
+                    all_orbitals.append(orb)
+
+        # Sort by angular momentum
+        orb_order = {"s": 0, "p": 1, "d": 2, "f": 3}
+        all_orbitals.sort(key=lambda o: orb_order.get(o, 99))
+
+        for orb in all_orbitals:
+            series = []
+            for el, el_pdos in pdos.items():
+                if orb not in el_pdos:
+                    continue
+                y_up = el_pdos[orb].get(Spin.up, np.zeros_like(dos.energies))
+                y_down = el_pdos[orb].get(Spin.down, np.zeros_like(dos.energies))
+                series.append((el, y_up, -y_down))
+            if series:
+                panels.append((orb, series))
+    else:
+        # Default: one panel per element
+        if plotting_config:
+            # Group plotting_config entries by element
+            from collections import OrderedDict
+            el_groups = OrderedDict()
+            for el, orb in plotting_config:
+                el_groups.setdefault(el, []).append(orb)
+
+            for el, orbs in el_groups.items():
+                if el not in pdos:
+                    continue
+                series = []
+                for orb in orbs:
+                    if orb == "total":
+                        y_up = np.zeros_like(dos.energies)
+                        y_down = np.zeros_like(dos.energies)
+                        for o_data in pdos[el].values():
+                            y_up += o_data.get(Spin.up, np.zeros_like(dos.energies))
+                            y_down += o_data.get(Spin.down, np.zeros_like(dos.energies))
+                        series.append((el, y_up, -y_down))
+                    else:
+                        if orb not in pdos[el]:
+                            continue
+                        y_up = pdos[el][orb].get(Spin.up, np.zeros_like(dos.energies))
+                        y_down = pdos[el][orb].get(Spin.down, np.zeros_like(dos.energies))
+                        series.append((f"{el}({orb})", y_up, -y_down))
+                if series:
+                    panels.append((el, series))
+        else:
+            for el, el_pdos in pdos.items():
+                series = []
+                for orb in el_pdos:
+                    y_up = el_pdos[orb].get(Spin.up, np.zeros_like(dos.energies))
+                    y_down = el_pdos[orb].get(Spin.down, np.zeros_like(dos.energies))
+                    series.append((f"{el}({orb})", y_up, -y_down))
+                if series:
+                    panels.append((el, series))
+
+    n_panels = len(panels)
+    if n_panels == 0:
+        print("Warning: no data to plot in panel mode.")
+        return
+
+    # Compute figure size if not given
+    if figsize is None:
+        panel_h = 2.4
+        figsize = (5, panel_h * n_panels + 0.6)
+
+    fig, axes = plt.subplots(
+        n_panels, 1,
+        figsize=figsize,
+        sharex=True,
+        gridspec_kw={"hspace": 0.0},
+    )
+    if n_panels == 1:
+        axes = [axes]
+
+    # Pre-compute total DOS for backdrop
+    y_total_up = dos.spin_up
+    y_total_down = -dos.spin_down
+
+    for idx, (panel_label, series) in enumerate(panels):
+        ax = axes[idx]
+
+        if show_fermi:
+            ax.axvline(0, color="k", lw=0.8, ls="--", alpha=0.5, zorder=0)
+
+        if is_spin_polarized:
+            ax.axhline(0, color="k", lw=0.4, alpha=0.8)
+
+        # Draw semi-transparent total DOS as backdrop
+        if show_total:
+            ax.fill_between(
+                dos.energies, 0, y_total_up,
+                color="#d4d4d4", alpha=0.35, lw=0, zorder=0,
+            )
+            if is_spin_polarized:
+                ax.fill_between(
+                    dos.energies, 0, y_total_down,
+                    color="#d4d4d4", alpha=0.35, lw=0, zorder=0,
+                )
+
+        panel_max_y = 0
+        panel_min_y = 0
+
+        legend_lines = []
+        legend_labels = []
+
+        for j, (s_label, y_up, y_down) in enumerate(series):
+            c = palette[j % len(palette)]
+
+            vis_up = y_up[x_mask]
+            vis_dn = y_down[x_mask]
+
+            if len(vis_up) > 0:
+                panel_max_y = max(panel_max_y, np.max(vis_up))
+            if is_spin_polarized and len(vis_dn) > 0:
+                panel_min_y = min(panel_min_y, np.min(vis_dn))
+
+            l = gradient_fill(dos.energies, y_up, ax=ax, color=c, alpha=0.85)
+            if is_spin_polarized:
+                gradient_fill(dos.energies, y_down, ax=ax, color=c, alpha=0.85)
+
+            if l is not None:
+                legend_lines.append(l)
+                legend_labels.append(s_label)
+
+        # Y-limits
+        if ylim:
+            ax.set_ylim(*ylim)
+        else:
+            if show_total:
+                vis_total_up = y_total_up[x_mask]
+                vis_total_dn = y_total_down[x_mask]
+                if len(vis_total_up) > 0:
+                    panel_max_y = max(panel_max_y, np.max(vis_total_up))
+                if is_spin_polarized and len(vis_total_dn) > 0:
+                    panel_min_y = min(panel_min_y, np.min(vis_total_dn))
+
+            upper = (panel_max_y * 1.15) / scale_factor if panel_max_y > 0 else 1
+            lower = (panel_min_y * 1.15) / scale_factor if is_spin_polarized else 0
+            ax.set_ylim(lower, upper)
+
+        ax.set_xlim(*xlim)
+        ax.set_yticks([])
+
+        # Panel label — placed as a text annotation inside the panel
+        ax.text(
+            0.02, 0.88, panel_label,
+            transform=ax.transAxes,
+            fontsize=13, fontweight="bold",
+            va="top", ha="left",
+            bbox=dict(
+                facecolor="white", edgecolor="none",
+                alpha=0.75, boxstyle="round,pad=0.2",
+            ),
+        )
+
+        # Per-panel legend for orbital breakdown
+        if len(legend_lines) > 1:
+            leg = ax.legend(
+                legend_lines, legend_labels,
+                frameon=False, fontsize=10,
+                loc="upper right",
+                ncol=1,
+                handlelength=1.2,
+                handletextpad=0.4,
+                borderpad=0.3,
+            )
+            for t in leg.get_texts():
+                t.set_fontweight("bold")
+
+        # Remove x tick labels from all panels except the bottom
+        if idx < n_panels - 1:
+            ax.tick_params(axis="x", labelbottom=False)
+
+        ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+
+        # Light border between panels
+        for spine in ("top", "bottom"):
+            ax.spines[spine].set_linewidth(0.6)
+            ax.spines[spine].set_color("#888888")
+
+    # Bottom panel: energy axis label and ticks
+    bottom_ax = axes[-1]
+    xticks = np.arange(np.ceil(xlim[0]), np.floor(xlim[1]) + 1, 1)
+    bottom_ax.set_xticks(xticks)
+    tick_labels = [f"{int(x)}" if x == int(x) else f"{x}" for x in xticks]
+    bottom_ax.set_xticklabels(tick_labels, fontweight="bold")
+    bottom_ax.set_xlabel("Energy (eV)", fontsize=14, weight="bold", labelpad=6)
+
+    # Shared Y-label in the centre
+    fig.text(
+        0.01, 0.5, "Density of States",
+        va="center", ha="left", rotation="vertical",
+        fontsize=14, fontweight="bold",
+    )
+
+    fig.subplots_adjust(left=0.10, right=0.97, top=0.97, bottom=0.08)
+    fig.savefig(out, dpi=dpi)
+    plt.close(fig)
+
+    if save_data:
+        items_to_plot = []
+        for _, series in panels:
+            for s_label, _, _ in series:
+                # reconstruct (el, orb) from label
+                if "(" in s_label and s_label.endswith(")"):
+                    el_part = s_label[:s_label.index("(")]
+                    orb_part = s_label[s_label.index("(") + 1:-1]
+                    items_to_plot.append((el_part, orb_part))
+                else:
+                    items_to_plot.append((s_label, "total"))
+        _save_dos_dat(dos, pdos, items_to_plot, "valyte_dos.dat")

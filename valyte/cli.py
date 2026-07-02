@@ -18,7 +18,7 @@ from valyte.band_plot import (
     plot_orbital_band_structure,
     plot_spin_texture_band_structure,
 )
-from valyte.dos_plot import load_dos, plot_dos
+from valyte.dos_plot import load_dos, plot_dos, plot_dos_panels
 from valyte.kpoints import generate_kpoints, generate_kpoints_interactive
 from valyte.potcar import generate_potcar
 from valyte.ipr import run_ipr, run_ipr_interactive
@@ -92,6 +92,10 @@ def main():
     dos_parser.add_argument("--height", type=float, default=4.0, help="Plot height in inches (default: 4)")
     dos_parser.add_argument("--save-data", action="store_true", help="Save DOS data to valyte_dos.dat")
     dos_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
+    dos_parser.add_argument("--panels", action="store_true",
+                            help="Split DOS into stacked panels (one per element)")
+    dos_parser.add_argument("--panel-by", choices=["element", "orbital"], default="element",
+                            help="Grouping mode for panels: 'element' (default) or 'orbital'")
 
     # Supercell
     supercell_parser = subparsers.add_parser("supercell", help="Create a supercell")
@@ -225,21 +229,41 @@ def main():
 
         try:
             dos_data, pdos_data = load_dos(target_path, elements)
-            plot_dos(
-                dos_data,
-                pdos_data,
-                out=_apply_format(args.output, args.format),
-                xlim=tuple(args.xlim),
-                ylim=tuple(args.ylim) if args.ylim else None,
-                figsize=(args.width, args.height),
-                font=args.font,
-                show_fermi=args.fermi,
-                show_total=not args.pdos,
-                plotting_config=plotting_config,
-                legend_cutoff=args.legend_cutoff,
-                scale_factor=args.scale,
-                save_data=args.save_data,
-            )
+
+            if args.panels:
+                default_out = "valyte_dos_panels.png"
+                out_file = args.output if args.output != "valyte_dos.png" else default_out
+                plot_dos_panels(
+                    dos_data,
+                    pdos_data,
+                    out=_apply_format(out_file, args.format),
+                    xlim=tuple(args.xlim),
+                    ylim=tuple(args.ylim) if args.ylim else None,
+                    figsize=(args.width, args.height) if (args.width != 5.0 or args.height != 4.0) else None,
+                    font=args.font,
+                    show_fermi=args.fermi,
+                    show_total=not args.pdos,
+                    plotting_config=plotting_config,
+                    scale_factor=args.scale,
+                    save_data=args.save_data,
+                    group_by=args.panel_by,
+                )
+            else:
+                plot_dos(
+                    dos_data,
+                    pdos_data,
+                    out=_apply_format(args.output, args.format),
+                    xlim=tuple(args.xlim),
+                    ylim=tuple(args.ylim) if args.ylim else None,
+                    figsize=(args.width, args.height),
+                    font=args.font,
+                    show_fermi=args.fermi,
+                    show_total=not args.pdos,
+                    plotting_config=plotting_config,
+                    legend_cutoff=args.legend_cutoff,
+                    scale_factor=args.scale,
+                    save_data=args.save_data,
+                )
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)

@@ -241,6 +241,8 @@ valyte dos [path/to/vasprun.xml] [options]
 | `--font` | `Arial` | Font family |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save DOS data to `valyte_dos.dat` |
+| `--panels` | off | Split DOS into stacked panels (one per element) |
+| `--panel-by` | `element` | Grouping for panels: `element` or `orbital` |
 
 Element/orbital formats: `Fe` (element total), `Fe(d)` or `Fe:d` (specific orbital), `-e Fe O` (multiple elements).
 
@@ -253,6 +255,9 @@ valyte dos -e "Fe(d)" "O(p)"
 valyte dos ./run --xlim -5 5 --fermi -o my_dos.png
 valyte dos -e Fe O --format svg
 valyte dos -e Fe O --save-data
+valyte dos --panels
+valyte dos --panels --panel-by orbital
+valyte dos --panels --fermi -e Fe O
 ```
 
 ---
