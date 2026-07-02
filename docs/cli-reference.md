@@ -378,3 +378,42 @@ valyte converge /path/to/run --start 5 --end 30
 valyte converge --forces --format pdf
 valyte converge --forces -o converge.png --save-data
 ```
+
+---
+
+## `valyte combined`
+
+Plot the electronic band structure and the projected DOS side-by-side. The energy axes are automatically aligned relative to the Fermi level (E = 0). Total DOS is never shown; only the projected DOS (PDOS) is plotted.
+
+```bash
+valyte combined [path] [options]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `path` | `.` | Directory containing `vasprun.xml` or direct path to `vasprun.xml` |
+| `--vasprun` | — | Explicit path to `vasprun.xml` (alternative to positional argument) |
+| `--kpoints` | auto-detected | Path to `KPOINTS` file (for high-symmetry labels) |
+| `--dos` | same as band | Path to `vasprun.xml` or directory for DOS data (if different from band structure) |
+| `-e`, `--elements` | all | Elements/orbitals to plot in the DOS panel |
+| `-o`, `--output` | `valyte_combined.png` | Output plot filename |
+| `--ylim` | `-4 4` | Shared energy range in eV |
+| `--scale` | `1.0` | Scaling factor for the DOS axis |
+| `--fermi` | off | Draw dashed horizontal line at the Fermi level (E = 0) |
+| `--legend-cutoff` | `0.10` | Hide legend if max PDOS contribution is below this fraction of total |
+| `--font` | `Arial` | Font family |
+| `--width` | `3.2` | Plot width in inches |
+| `--height` | `3.2` | Plot height in inches |
+| `--save-data` | off | Save both band and DOS data to text files |
+| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
+| `--spin-resolved` | off | Plot spin-up/spin-down channels in distinct colors |
+| `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+
+**Examples:**
+
+```bash
+valyte combined
+valyte combined -e Fe O --ylim -3 3
+valyte combined --fermi --no-bold
+valyte combined --save-data --format pdf
+```

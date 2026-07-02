@@ -42,6 +42,7 @@ nav:
   - Post-processing:
     - Band Structure: band.md
     - Density of States: dos.md
+    - Combined Band + DOS: combined.md
     - Effective Mass: effmass.md
     - IPR: ipr.md
     - Convergence: converge.md

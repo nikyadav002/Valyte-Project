@@ -19,6 +19,7 @@ from valyte.band_plot import (
     plot_spin_texture_band_structure,
 )
 from valyte.dos_plot import load_dos, plot_dos, plot_dos_panels
+from valyte.combined_plot import plot_combined
 from valyte.kpoints import generate_kpoints, generate_kpoints_interactive
 from valyte.potcar import generate_potcar
 from valyte.ipr import run_ipr, run_ipr_interactive
@@ -88,8 +89,8 @@ def main():
     dos_parser.add_argument("--pdos", action="store_true", help="Plot only Projected DOS (hide Total DOS)")
     dos_parser.add_argument("--legend-cutoff", type=float, default=0.10, help="Threshold for legend visibility (0.0-1.0)")
     dos_parser.add_argument("--font", default="Arial", help="Font family")
-    dos_parser.add_argument("--width", type=float, default=5.0, help="Plot width in inches (default: 5)")
-    dos_parser.add_argument("--height", type=float, default=4.0, help="Plot height in inches (default: 4)")
+    dos_parser.add_argument("--width", type=float, default=4.45, help="Plot width in inches (default: 4.45)")
+    dos_parser.add_argument("--height", type=float, default=4.2, help="Plot height in inches (default: 4.2)")
     dos_parser.add_argument("--save-data", action="store_true", help="Save DOS data to valyte_dos.dat")
     dos_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
     dos_parser.add_argument("--panels", action="store_true",
@@ -131,8 +132,8 @@ def main():
         help="Labels for the triangle legend (defaults to the spec strings)",
     )
     band_parser.add_argument("--lw", type=float, default=2.0, help="Line width for tricolor bands (default: 2.0)")
-    band_parser.add_argument("--width", type=float, default=4.0, help="Plot width in inches (default: 4)")
-    band_parser.add_argument("--height", type=float, default=4.0, help="Plot height in inches (default: 4)")
+    band_parser.add_argument("--width", type=float, default=4.2, help="Plot width in inches (default: 4.2)")
+    band_parser.add_argument("--height", type=float, default=4.2, help="Plot height in inches (default: 4.2)")
     band_parser.add_argument("--save-data", action="store_true", help="Save band data to valyte_band.dat")
     band_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
     band_parser.add_argument(
@@ -222,6 +223,26 @@ def main():
     bandgap_parser = subparsers.add_parser("bandgap", help="Print electronic bandgap")
     bandgap_parser.add_argument("filepath", nargs="?", default=".", help="Path to vasprun.xml or directory containing it")
 
+    # Combined Band + DOS Plot
+    combined_parser = subparsers.add_parser("combined", help="Plot Band Structure and DOS side-by-side")
+    combined_parser.add_argument("filepath", nargs="?", help="Path to vasprun.xml or directory containing it")
+    combined_parser.add_argument("--vasprun", help="Explicit path to vasprun.xml (alternative to positional argument)")
+    combined_parser.add_argument("--kpoints", help="Path to KPOINTS file (for labels)")
+    combined_parser.add_argument("--dos", help="Path to vasprun.xml or directory for DOS data (if different from band structure)")
+    combined_parser.add_argument("-e", "--elements", nargs="+", help="Elements/Orbitals to plot in DOS (e.g., 'Fe' or 'Fe(d)')")
+    combined_parser.add_argument("-o", "--output", default="valyte_combined.png", help="Output filename")
+    combined_parser.add_argument("--ylim", nargs=2, type=float, default=[-4, 4], help="Energy range (min max)")
+    combined_parser.add_argument("--scale", type=float, default=1.0, help="Scaling factor for DOS axis")
+    combined_parser.add_argument("--fermi", action="store_true", help="Draw dashed horizontal line at Fermi level (E=0)")
+    combined_parser.add_argument("--legend-cutoff", type=float, default=0.10, help="Threshold for legend visibility (0.0-1.0)")
+    combined_parser.add_argument("--font", default="Arial", help="Font family")
+    combined_parser.add_argument("--width", type=float, default=3.2, help="Plot width in inches (default: 3.2)")
+    combined_parser.add_argument("--height", type=float, default=3.2, help="Plot height in inches (default: 3.2)")
+    combined_parser.add_argument("--save-data", action="store_true", help="Save band and DOS data to text files")
+    combined_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
+    combined_parser.add_argument("--spin-resolved", action="store_true", help="Plot spin-up/spin-down channels in distinct colors")
+    combined_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
+
     args = parser.parse_args()
 
     if args.command == "dos":
@@ -243,7 +264,7 @@ def main():
                     out=_apply_format(out_file, args.format),
                     xlim=tuple(args.xlim),
                     ylim=tuple(args.ylim) if args.ylim else None,
-                    figsize=(args.width, args.height) if (args.width != 5.0 or args.height != 4.0) else None,
+                    figsize=(args.width, args.height) if (args.width != 4.45 or args.height != 4.2) else None,
                     font=args.font,
                     show_fermi=args.fermi,
                     show_total=not args.pdos,
@@ -393,6 +414,48 @@ def main():
             print(f"Bandgap = {bg:.4f} eV")
         except Exception as e:
             print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.command == "combined":
+        target_path = args.filepath if args.filepath else args.vasprun
+        if not target_path:
+            target_path = "."
+
+        elements, plotting_config = parse_element_selection(args.elements)
+
+        if os.path.isdir(target_path):
+            vasprun_file = os.path.join(target_path, "vasprun.xml")
+        else:
+            vasprun_file = target_path
+
+        kpoints_file = args.kpoints
+        if not kpoints_file:
+            base_dir = os.path.dirname(vasprun_file) or "."
+            potential_kpoints = os.path.join(base_dir, "KPOINTS")
+            if os.path.exists(potential_kpoints):
+                kpoints_file = potential_kpoints
+
+        try:
+            plot_combined(
+                vasprun_path=vasprun_file,
+                kpoints_path=kpoints_file,
+                dos_path=args.dos,
+                elements=elements,
+                plotting_config=plotting_config,
+                output=_apply_format(args.output, args.format),
+                ylim=tuple(args.ylim),
+                figsize=(args.width, args.height),
+                font=args.font,
+                show_fermi=args.fermi,
+                scale_factor=args.scale,
+                legend_cutoff=args.legend_cutoff,
+                save_data=args.save_data,
+                spin_resolved=args.spin_resolved,
+                bold=not args.no_bold,
+            )
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
             sys.exit(1)
 
     elif args.command == "band":

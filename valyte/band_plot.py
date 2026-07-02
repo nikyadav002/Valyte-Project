@@ -232,7 +232,7 @@ def _save_band_dat(distances, energies, ticks, filepath):
 
 
 def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png",
-                        ylim=None, figsize=(4, 4), dpi=400, font="Arial",
+                        ylim=None, figsize=(4.2, 4.2), dpi=400, font="Arial",
                         save_data=False, spin_resolved=False, bold=True):
     """Plot the electronic band structure from a VASP vasprun.xml."""
 
@@ -248,7 +248,7 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
     _weight = "bold" if bold else "normal"
     font = font_map.get(font.lower(), "Arial")
     mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.4 if bold else 0.8
+    mpl.rcParams["axes.linewidth"] = 0.8
     mpl.rcParams["font.weight"] = _weight
     mpl.rcParams["font.size"] = 14
     mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
@@ -323,6 +323,14 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
 
     ax.set_xticks(ticks["distance"])
     clean_labels = [(l or "").replace("$\\mid$", "|") for l in ticks["label"]]
+    if bold:
+        clean_labels = [
+            l.replace("\\Gamma", "\\mathbf{\\Gamma}")
+             .replace("\\Sigma", "\\mathbf{\\Sigma}")
+             .replace("\\Delta", "\\mathbf{\\Delta}")
+             .replace("\\Lambda", "\\mathbf{\\Lambda}")
+            for l in clean_labels
+        ]
     ax.set_xticklabels(clean_labels, fontsize=14, fontweight=_weight)
 
     for d in ticks["distance"]:
@@ -357,7 +365,7 @@ def plot_orbital_band_structure(
     tricolor=None,
     tricolors=None,
     tri_labels=None,
-    figsize=(4, 4),
+    figsize=(4.2, 4.2),
     dpi=400,
     lw=2.0,
     font="Arial",
@@ -391,7 +399,7 @@ def plot_orbital_band_structure(
     _weight = "bold" if bold else "normal"
     font = font_map.get(font.lower(), "Arial")
     mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.4 if bold else 0.8
+    mpl.rcParams["axes.linewidth"] = 0.8
     mpl.rcParams["font.weight"] = _weight
     mpl.rcParams["font.size"] = 14
     mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
@@ -479,6 +487,14 @@ def plot_orbital_band_structure(
 
     ax.set_xticks(ticks["distance"])
     clean_labels = [(l or "").replace("$\\mid$", "|") for l in ticks["label"]]
+    if bold:
+        clean_labels = [
+            l.replace("\\Gamma", "\\mathbf{\\Gamma}")
+             .replace("\\Sigma", "\\mathbf{\\Sigma}")
+             .replace("\\Delta", "\\mathbf{\\Delta}")
+             .replace("\\Lambda", "\\mathbf{\\Lambda}")
+            for l in clean_labels
+        ]
     ax.set_xticklabels(clean_labels, fontsize=14, fontweight=_weight)
 
     for d in ticks["distance"]:
@@ -511,7 +527,7 @@ def plot_spin_texture_band_structure(
     kpoints_path=None,
     output="valyte_band_spin_texture.png",
     ylim=None,
-    figsize=(4, 4),
+    figsize=(4.2, 4.2),
     dpi=400,
     font="Arial",
     save_data=False,
@@ -550,7 +566,7 @@ def plot_spin_texture_band_structure(
     _weight = "bold" if bold else "normal"
     font = font_map.get(font.lower(), "Arial")
     mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.4 if bold else 0.8
+    mpl.rcParams["axes.linewidth"] = 0.8
     mpl.rcParams["font.weight"] = _weight
     mpl.rcParams["font.size"] = 14
     mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
@@ -633,6 +649,14 @@ def plot_spin_texture_band_structure(
 
     ax.set_xticks(ticks["distance"])
     clean_labels = [(l or "").replace("$\\mid$", "|") for l in ticks["label"]]
+    if bold:
+        clean_labels = [
+            l.replace("\\Gamma", "\\mathbf{\\Gamma}")
+             .replace("\\Sigma", "\\mathbf{\\Sigma}")
+             .replace("\\Delta", "\\mathbf{\\Delta}")
+             .replace("\\Lambda", "\\mathbf{\\Lambda}")
+            for l in clean_labels
+        ]
     ax.set_xticklabels(clean_labels, fontsize=14, fontweight=_weight)
 
     for d in ticks["distance"]:

@@ -210,7 +210,7 @@ def plot_dos(
     out="valyte_dos.png",
     xlim=(-6, 6),
     ylim=None,
-    figsize=(5, 4),
+    figsize=(4.45, 4.2),
     dpi=400,
     legend_loc="auto",
     font="Arial",
@@ -233,7 +233,7 @@ def plot_dos(
     _weight = "bold" if bold else "normal"
     font = font_map.get(font.lower(), "Arial")
     mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.4 if bold else 0.8
+    mpl.rcParams["axes.linewidth"] = 0.8
     mpl.rcParams["font.weight"] = _weight
     mpl.rcParams["font.size"] = 12
     mpl.rcParams["xtick.direction"] = "in"
@@ -470,6 +470,7 @@ def plot_dos_panels(
         elements shown within each.
     """
 
+    plt.style.use("default")
     font_map = {
         "arial": "Arial",
         "helvetica": "Helvetica",
@@ -479,11 +480,9 @@ def plot_dos_panels(
     _weight = "bold" if bold else "normal"
     font = font_map.get(font.lower(), "Arial")
     mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.2 if bold else 0.8
+    mpl.rcParams["axes.linewidth"] = 0.8
     mpl.rcParams["font.weight"] = _weight
     mpl.rcParams["font.size"] = 11
-
-    plt.style.use("default")
 
     palette = [
         "#e63946", "#457b9d", "#2a9d8f", "#f4a261", "#6a4c93",
