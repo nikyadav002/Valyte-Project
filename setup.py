@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="valyte",
-    version="0.24.0",
+    version="0.25.0",
     packages=find_packages(),
     install_requires=[
         "numpy",
