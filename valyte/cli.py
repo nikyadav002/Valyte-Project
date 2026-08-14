@@ -118,7 +118,9 @@ def _build_colors_map(colors_file, colors_args, inline_colors):
 
 def main():
     parser = argparse.ArgumentParser(description="Valyte: VASP Post-Processing Tool")
+    parser.add_argument("--version", action="version", version="%(prog)s 0.26.0")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
 
     # DOS
     dos_parser = subparsers.add_parser("dos", help="Plot Density of States (DOS)")
