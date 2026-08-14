@@ -18,7 +18,7 @@ from valyte.band_plot import (
     plot_orbital_band_structure,
     plot_spin_texture_band_structure,
 )
-from valyte.dos_plot import load_dos, plot_dos, plot_dos_panels
+from valyte.dos_plot import load_dos, plot_dos, plot_dos_panels, load_color_file
 from valyte.combined_plot import plot_combined
 from valyte.kpoints import generate_kpoints, generate_kpoints_interactive
 from valyte.potcar import generate_potcar
@@ -44,15 +44,16 @@ def _normalize_element(symbol: str) -> str:
 
 
 def parse_element_selection(inputs):
-    """Parse element/orbital selections like "Fe", "Fe(d)", "O(p)"."""
+    """Parse element/orbital selections like "Fe", "Fe(d)", "O(p)", or with inline colors like "Fe(d):red"."""
     if not inputs:
-        return None, None
+        return None, None, {}
 
     elements_to_load = []
     elements_seen = set()
     plotting_config = []
+    inline_colors = {}
 
-    pattern = re.compile(r"^([A-Za-z]+)(?:\(([spdf])\))?$", re.IGNORECASE)
+    pattern = re.compile(r"^([A-Za-z]+)(?:\(([spdf])\))?(?:[:=]([^\s]+))?$", re.IGNORECASE)
 
     for item in inputs:
         match = pattern.match(item.strip())
@@ -62,14 +63,57 @@ def parse_element_selection(inputs):
 
         el = _normalize_element(match.group(1))
         orb = match.group(2).lower() if match.group(2) else None
+        color = match.group(3)
 
         if el not in elements_seen:
             elements_to_load.append(el)
             elements_seen.add(el)
 
-        plotting_config.append((el, orb or "total"))
+        orb_str = orb or "total"
+        plotting_config.append((el, orb_str))
 
-    return elements_to_load, plotting_config
+        if color:
+            label = el if orb_str == "total" else f"{el}({orb_str})"
+            if re.match(r"^[0-9a-fA-F]{3,6}$", color):
+                color = "#" + color
+            inline_colors[label] = color
+
+    return elements_to_load, plotting_config, inline_colors
+
+
+def _build_colors_map(colors_file, colors_args, inline_colors):
+    colors_map = {}
+    if colors_file:
+        colors_map.update(load_color_file(colors_file))
+
+    if colors_args:
+        positional = []
+        for item in colors_args:
+            if "=" in item:
+                k, v = item.split("=", 1)
+                v = v.strip()
+                if re.match(r"^[0-9a-fA-F]{3,6}$", v):
+                    v = "#" + v
+                colors_map[k.strip()] = v
+            elif ":" in item:
+                k, v = item.split(":", 1)
+                v = v.strip()
+                if re.match(r"^[0-9a-fA-F]{3,6}$", v):
+                    v = "#" + v
+                colors_map[k.strip()] = v
+            else:
+                v = item.strip()
+                if re.match(r"^[0-9a-fA-F]{3,6}$", v):
+                    v = "#" + v
+                positional.append(v)
+        if positional and not colors_map:
+            colors_map = positional
+
+    if inline_colors:
+        if isinstance(colors_map, dict):
+            colors_map.update(inline_colors)
+
+    return colors_map or None
 
 
 def main():
@@ -98,6 +142,9 @@ def main():
     dos_parser.add_argument("--panel-by", choices=["element", "orbital"], default="element",
                             help="Grouping mode for panels: 'element' (default) or 'orbital'")
     dos_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
+    dos_parser.add_argument("--colors-file", help="Path to JSON or text file mapping elements/orbitals to colors")
+    dos_parser.add_argument("-c", "--colors", nargs="+", help="Custom colors mapping or list (e.g., 'Fe(d)=red O(p)=blue' or 'red blue')")
+
 
     # Supercell
     supercell_parser = subparsers.add_parser("supercell", help="Create a supercell")
@@ -242,6 +289,9 @@ def main():
     combined_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
     combined_parser.add_argument("--spin-resolved", action="store_true", help="Plot spin-up/spin-down channels in distinct colors")
     combined_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
+    combined_parser.add_argument("--colors-file", help="Path to JSON or text file mapping elements/orbitals to colors")
+    combined_parser.add_argument("-c", "--colors", nargs="+", help="Custom colors mapping or list (e.g., 'Fe(d)=red O(p)=blue' or 'red blue')")
+
 
     args = parser.parse_args()
 
@@ -250,7 +300,8 @@ def main():
         if not target_path:
             target_path = "."
 
-        elements, plotting_config = parse_element_selection(args.elements)
+        elements, plotting_config, inline_colors = parse_element_selection(args.elements)
+        colors_map = _build_colors_map(args.colors_file, args.colors, inline_colors)
 
         try:
             dos_data, pdos_data = load_dos(target_path, elements)
@@ -273,6 +324,7 @@ def main():
                     save_data=args.save_data,
                     group_by=args.panel_by,
                     bold=not args.no_bold,
+                    colors=colors_map,
                 )
             else:
                 plot_dos(
@@ -290,6 +342,7 @@ def main():
                     scale_factor=args.scale,
                     save_data=args.save_data,
                     bold=not args.no_bold,
+                    colors=colors_map,
                 )
         except Exception as e:
             print(f"Error: {e}")
@@ -421,7 +474,8 @@ def main():
         if not target_path:
             target_path = "."
 
-        elements, plotting_config = parse_element_selection(args.elements)
+        elements, plotting_config, inline_colors = parse_element_selection(args.elements)
+        colors_map = _build_colors_map(args.colors_file, args.colors, inline_colors)
 
         if os.path.isdir(target_path):
             vasprun_file = os.path.join(target_path, "vasprun.xml")
@@ -452,7 +506,9 @@ def main():
                 save_data=args.save_data,
                 spin_resolved=args.spin_resolved,
                 bold=not args.no_bold,
+                colors=colors_map,
             )
+
         except Exception as e:
             import traceback
             traceback.print_exc()

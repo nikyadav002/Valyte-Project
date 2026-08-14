@@ -17,7 +17,9 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 
 | Option | Default | Description |
 |---|---|---|
-| `-e`, `--elements` | all | Elements/orbitals to plot (see formats below) |
+| `-e`, `--elements` | all | Elements/orbitals to plot, optionally with inline colors (`Fe(d):red`, `O(p):#2a9d8f`) |
+| `--colors-file` | none | Path to JSON or text file mapping elements/orbitals/species to colors |
+| `-c`, `--colors` | none | Custom colors mapping or list (`Fe(d)=red O(p)=blue` or `red blue`) |
 | `--xlim` | `-6 6` | Energy range in eV |
 | `--ylim` | auto | DOS range |
 | `--scale` | `1.0` | Divide all DOS values by this factor (zoom in on small features) |
@@ -34,16 +36,47 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 
 ---
 
-## Element and orbital formats
+## Element, orbital, and color formats
 
-The `-e` / `--elements` flag accepts a mix of formats in a single command:
+The `-e` / `--elements` flag accepts element names, orbital projections, and inline color assignments (using names or hex codes):
 
-| Format | Example | Plots |
+| Format | Example | Description |
 |---|---|---|
 | Element | `Fe` | Total PDOS for Fe (all orbitals summed) |
 | Orbital | `Fe(d)` or `Fe:d` | Only the d-orbital contribution of Fe |
-| Multiple | `-e Fe O` | Total PDOS for Fe and O |
-| Mixed | `-e Fe "Fe(d)"` | Fe total and Fe d-orbital on the same plot |
+| Inline Color | `Fe(d):red` or `O(p):#2a9d8f` | Assign specific colors (names or hex codes) |
+| Hex Code | `Fe(d):e63946` | Hex code without `#` (convenient in CLI) |
+
+---
+
+## Color Customization
+
+You can customize colors via a config file, CLI `--colors`, or inline in `-e`:
+
+### Using a colors file (`--colors-file`)
+Create a JSON or simple key-value file mapping elements, orbital channels, or specific species (`Fe(d)`) to colors:
+
+**`colors.json`**:
+```json
+{
+  "Fe(d)": "#e63946",
+  "Fe(s)": "orange",
+  "O(p)": "#00b4d8"
+}
+```
+
+```bash
+valyte dos -e "Fe(d)" "O(p)" --colors-file colors.json
+```
+
+### Using CLI mapping (`--colors`)
+```bash
+# Mapping mode
+valyte dos -e "Fe(d)" "O(p)" --colors Fe(d)=red O(p)=blue
+
+# Ordered list mode
+valyte dos -e "Fe(d)" "O(p)" --colors red blue
+```
 
 ---
 
@@ -56,14 +89,15 @@ valyte dos
 # Total PDOS for specific elements
 valyte dos -e Fe O
 
-# Specific orbitals only
-valyte dos -e "Fe(d)" "O(p)"
+# Specific orbitals with custom colors file
+valyte dos -e "Fe(d)" "O(p)" --colors-file colors.json
 
-# Fe total PDOS alongside Fe d-orbital
-valyte dos -e Fe "Fe(d)"
+# Inline custom colors with hex codes
+valyte dos -e Fe(d):e63946 O(p):2a9d8f
 
 # Custom path, energy range, Fermi line, output
 valyte dos ./vasp_run --xlim -5 5 --fermi -o my_dos.png
+
 
 # Show only projected DOS, no total DOS
 valyte dos --pdos -e Fe O

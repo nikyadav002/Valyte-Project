@@ -70,8 +70,9 @@ That's it. See the [Getting Started guide](https://valyte-project.readthedocs.io
 
 | Command | Description |
 |---|---|
-| `valyte dos` | Total and projected DOS with orbital resolution and gradient fills |
+| `valyte dos` | Total and projected DOS with orbital resolution, custom colors (`--colors-file`, `--colors`), and gradient fills |
 | `valyte dos --panels` | Stacked per-element (or per-orbital) DOS panels |
+
 | `valyte band` | Color-coded band structure with VBM aligned to 0 eV |
 | `valyte band --tricolor` | Orbital-resolved tricolor band structure |
 | `valyte band --spin-resolved` | Spin-polarized band structure — spin-up and spin-down channels |

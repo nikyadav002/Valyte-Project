@@ -231,7 +231,9 @@ valyte dos [path/to/vasprun.xml] [options]
 
 | Option | Default | Description |
 |---|---|---|
-| `-e`, `--elements` | all | Elements/orbitals to plot |
+| `-e`, `--elements` | all | Elements/orbitals to plot (e.g. `Fe`, `Fe(d)`, `Fe(d):red`, `O(p):#2a9d8f`) |
+| `--colors-file` | none | Path to JSON or text file mapping elements/orbitals to colors |
+| `-c`, `--colors` | none | Custom colors mapping or list (`Fe(d)=red O(p)=blue` or `red blue`) |
 | `--xlim` | `-6 6` | Energy range in eV |
 | `--ylim` | auto | DOS range |
 | `--scale` | `1.0` | Divide DOS values by this factor |
@@ -246,21 +248,23 @@ valyte dos [path/to/vasprun.xml] [options]
 | `--panel-by` | `element` | Grouping for panels: `element` or `orbital` |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
-Element/orbital formats: `Fe` (element total), `Fe(d)` or `Fe:d` (specific orbital), `-e Fe O` (multiple elements).
+Element/orbital formats: `Fe` (element total), `Fe(d)` or `Fe:d` (specific orbital), `-e Fe O` (multiple elements), `Fe(d):e63946` (inline color/hex).
 
 **Examples:**
 
 ```bash
 valyte dos
 valyte dos -e Fe O
-valyte dos -e "Fe(d)" "O(p)"
+valyte dos -e "Fe(d)" "O(p)" --colors-file colors.json
+valyte dos -e Fe(d):e63946 O(p):2a9d8f
 valyte dos ./run --xlim -5 5 --fermi -o my_dos.png
 valyte dos -e Fe O --format svg
 valyte dos -e Fe O --save-data
-valyte dos --panels
+valyte dos --panels --colors-file colors.json
 valyte dos --panels --panel-by orbital
 valyte dos --panels --fermi -e Fe O
 ```
+
 
 ---
 
@@ -396,6 +400,8 @@ valyte combined [path] [options]
 | `--kpoints` | auto-detected | Path to `KPOINTS` file (for high-symmetry labels) |
 | `--dos` | same as band | Path to `vasprun.xml` or directory for DOS data (if different from band structure) |
 | `-e`, `--elements` | all | Elements/orbitals to plot in the DOS panel |
+| `--colors-file` | none | Path to JSON or text file mapping elements/orbitals to colors |
+| `-c`, `--colors` | none | Custom colors mapping or list (`Fe(d)=red O(p)=blue` or `red blue`) |
 | `-o`, `--output` | `valyte_combined.png` | Output plot filename |
 | `--ylim` | `-4 4` | Shared energy range in eV |
 | `--scale` | `1.0` | Scaling factor for the DOS axis |
@@ -414,6 +420,7 @@ valyte combined [path] [options]
 ```bash
 valyte combined
 valyte combined -e Fe O --ylim -3 3
+valyte combined -e "Fe(d)" "O(p)" --colors-file colors.json
 valyte combined --fermi --no-bold
 valyte combined --save-data --format pdf
 ```

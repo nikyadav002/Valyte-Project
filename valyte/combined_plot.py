@@ -100,6 +100,7 @@ def plot_combined(
     save_data=False,
     spin_resolved=False,
     bold=True,
+    colors=None,
 ):
     """Plot combined Band Structure and DOS side-by-side."""
     if os.path.isdir(vasprun_path):
@@ -256,7 +257,9 @@ def plot_combined(
         if el not in pdos_data:
             continue
 
-        c = palette[i % len(palette)]
+        label = el if orb == "total" else f"{el}({orb})"
+        c = resolve_color(label, el, orb, i, colors, palette)
+
 
         if orb == "total":
             y_up = np.zeros_like(dos_data.energies)

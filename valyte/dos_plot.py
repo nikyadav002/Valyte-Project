@@ -12,6 +12,55 @@ from matplotlib.patches import Polygon
 from matplotlib.ticker import AutoMinorLocator
 from pymatgen.io.vasp import Vasprun
 from pymatgen.electronic_structure.core import Spin
+import re
+
+
+def load_color_file(filepath):
+    """Load color mapping from JSON or plain key-value text file."""
+    if not filepath or not os.path.exists(filepath):
+        return {}
+
+    colors = {}
+    if filepath.endswith(".json"):
+        import json
+        with open(filepath, "r") as f:
+            raw = json.load(f)
+            for k, v in raw.items():
+                v_str = str(v).strip()
+                if re.match(r"^[0-9a-fA-F]{3,6}$", v_str):
+                    v_str = "#" + v_str
+                colors[k] = v_str
+        return colors
+
+    with open(filepath, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = re.split(r"[\s:=]+", line, maxsplit=1)
+            if len(parts) == 2:
+                key, val = parts[0].strip(), parts[1].strip()
+                if re.match(r"^[0-9a-fA-F]{3,6}$", val):
+                    val = "#" + val
+                colors[key] = val
+    return colors
+
+
+def resolve_color(label, el, orb, index, colors, palette):
+    """Resolve color for a given label/element/orbital."""
+    c = None
+    if isinstance(colors, dict):
+        c = colors.get(label) or colors.get(el) or colors.get(orb)
+    elif isinstance(colors, (list, tuple)) and index < len(colors):
+        c = colors[index]
+
+    if not c:
+        c = palette[index % len(palette)]
+
+    if isinstance(c, str) and re.match(r"^[0-9a-fA-F]{3,6}$", c):
+        c = "#" + c
+    return c
+
 
 
 def gradient_fill(x, y, ax=None, color=None, xlim=None, **kwargs):
@@ -221,6 +270,7 @@ def plot_dos(
     scale_factor=1.0,
     save_data=False,
     bold=True,
+    colors=None,
 ):
     """Plot total and projected DOS with the Valyte style."""
 
@@ -258,9 +308,6 @@ def plot_dos(
     if is_spin_polarized:
         ax.axhline(0, color="k", lw=0.5, alpha=1.0)
 
-    # 20 maximally-distinct categorical colors, ordered for adjacent contrast.
-    # Inspired by the Colour Alphabet (Green-Armytage) used by SUMO, but tuned
-    # for Valyte's gradient-fill aesthetic — no washed-out pastels.
     palette = [
         "#e63946",  # red
         "#457b9d",  # steel blue
@@ -302,7 +349,9 @@ def plot_dos(
         if el not in pdos:
             continue
 
-        c = palette[i % len(palette)]
+        label = el if orb == "total" else f"{el}({orb})"
+        c = resolve_color(label, el, orb, i, colors, palette)
+
 
         if orb == "total":
             y_up = np.zeros_like(dos.energies)
@@ -459,6 +508,7 @@ def plot_dos_panels(
     save_data=False,
     group_by="element",
     bold=True,
+    colors=None,
 ):
     """Plot DOS as vertically stacked panels — one per element (or per orbital).
 
@@ -611,7 +661,10 @@ def plot_dos_panels(
         legend_labels = []
 
         for j, (s_label, y_up, y_down) in enumerate(series):
-            c = palette[j % len(palette)]
+            el_name = s_label[:s_label.index("(")] if "(" in s_label else s_label
+            orb_name = s_label[s_label.index("(") + 1:-1] if "(" in s_label and s_label.endswith(")") else "total"
+            c = resolve_color(s_label, el_name, orb_name, j, colors, palette)
+
 
             vis_up = y_up[x_mask]
             vis_dn = y_down[x_mask]
