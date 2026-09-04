@@ -1,3 +1,52 @@
 [build-system]
 requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "valyte"
+dynamic = ["version"]
+description = "A comprehensive CLI tool for VASP pre-processing (Supercells, K-points) and post-processing (DOS, Band Structure plotting)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Nikhil Singh", email = "nikhil002.iitd@gmail.com" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+]
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "pymatgen",
+    "scipy",
+    "seekpath",
+]
+
+[project.scripts]
+valyte = "valyte.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/nikyadav002/Valyte-Project"
+Documentation = "https://valyte-project.readthedocs.io/"
+Repository = "https://github.com/nikyadav002/Valyte-Project"
+Issues = "https://github.com/nikyadav002/Valyte-Project/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "valyte.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["valyte*"]
+
+[tool.setuptools.package-data]
+valyte = ["*.png"]
+"valyte.data" = ["*.json"]

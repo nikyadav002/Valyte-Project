@@ -345,7 +345,6 @@ def compute_effective_masses(vasprun_path=".", kpoints_path=None,
 
     # Spin channels to process
     spin_channels = list(bs.bands.keys())
-    is_spin_polarized = len(spin_channels) > 1
 
     results = {
         "band_gap": gap_value,
@@ -546,11 +545,8 @@ def print_results(results):
 
 def _print_mass_line(m):
     """Print a single effective mass result line."""
-    band_suffix = ""
-    # Show band index if multiple bands are being reported
     direction = m["direction"]
     m_star = m["m_star"]
-    r_sq = m["r_squared"]
 
     if abs(m_star) > 1e6:
         print(f"    {direction:12s}:     m* = {'∞':>8s} m₀")

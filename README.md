@@ -107,8 +107,8 @@ pip install -e .
 
 ### Requirements
 
-- Python ≥ 3.8
-- Dependencies (`numpy`, `matplotlib`, `pymatgen`, `scipy`, `click`, `seekpath`) are installed automatically.
+- Python ≥ 3.9
+- Dependencies (`numpy`, `matplotlib`, `pymatgen`, `scipy`, `seekpath`) are installed automatically.
 - For `valyte potcar`: requires [pymatgen pseudopotential setup](https://pymatgen.org/installation.html#potcar-setup).
 
 ---

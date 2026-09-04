@@ -74,13 +74,12 @@ Valyte depends on:
 | `matplotlib` | Plotting |
 | `pymatgen` | Crystal structure parsing, POTCAR generation |
 | `scipy` | Curve fitting (effective mass) |
-| `click` | CLI framework |
 | `seekpath` | K-path generation |
 
 ## Code Style
 
 - **Python**: Follow PEP 8 conventions
-- **CLI**: Use [Click](https://click.palletsprojects.com/) decorators consistently
+- **CLI**: Standard library `argparse` with subparser structure
 - **Plots**: Match the existing Valyte aesthetic — clean typography, gradient fills, publication-quality defaults
 
 ## Documentation

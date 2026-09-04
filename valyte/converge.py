@@ -9,7 +9,6 @@ import matplotlib as mpl
 mpl.use("agg")
 mpl.rcParams["axes.unicode_minus"] = False
 import matplotlib.pyplot as plt
-import numpy as np
 
 
 # ── File helpers ──────────────────────────────────────────────────────────────
@@ -486,13 +485,15 @@ def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
     row = 0
 
     # Panel 1 — Energy
-    ax = axes[row]; row += 1
+    ax = axes[row]
+    row += 1
     ax.plot(xs, e0s, color=_PRIMARY, lw=1.6, marker="o", ms=3.5, zorder=3)
     ax.set_ylabel("Energy (eV)", fontweight=_weight)
     _style_ax(ax, bold=bold)
 
     # Panel 2 — |dE|
-    ax = axes[row]; row += 1
+    ax = axes[row]
+    row += 1
     vx = [x for x, d in zip(xs, des) if d is not None and d > 0]
     vd = [d for d in des if d is not None and d > 0]
     if vx:
@@ -509,7 +510,8 @@ def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
 
     # Panel 3 (optional) — Max force
     if has_forces:
-        ax = axes[row]; row += 1
+        ax = axes[row]
+        row += 1
         fx = [x for x, f in zip(xs, fmax_list) if f is not None]
         fy = [f for f in fmax_list if f is not None]
         if fy:
@@ -526,7 +528,8 @@ def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
 
     # Panel 4 (optional) — Pressure
     if has_pressure:
-        ax = axes[row]; row += 1
+        ax = axes[row]
+        row += 1
         px = [x for x, p in zip(xs, pres_list) if p is not None]
         py = [p for p in pres_list if p is not None]
         if py:
@@ -537,7 +540,8 @@ def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
 
     # Panel (optional) — Magnetization
     if has_mag:
-        ax = axes[row]; row += 1
+        ax = axes[row]
+        row += 1
         mx = [s["number"] for s in ionic if s["mag"] is not None]
         my = [s["mag"]    for s in ionic if s["mag"] is not None]
         ax.plot(mx, my, color="#e63946", lw=1.6, marker="o", ms=3.5, zorder=3)

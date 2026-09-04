@@ -101,7 +101,6 @@ def _plot_panel(ax, masses, base_color, linestyles, markers, title, _weight="bol
         e_fit = m["e_fit"]
         direction = m["direction"]
         m_star = m["m_star"]
-        r_sq = m["r_squared"]
 
         # Slightly shift color for each direction
         factor = 1.0 - 0.15 * (i % 4)

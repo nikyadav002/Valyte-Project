@@ -2,7 +2,6 @@
 """Combined Band Structure & DOS side-by-side plotting."""
 
 import os
-import sys
 import numpy as np
 import matplotlib as mpl
 mpl.use("agg")
@@ -17,7 +16,7 @@ from pymatgen.io.vasp import BSVasprun
 from pymatgen.electronic_structure.plotter import BSPlotter
 from pymatgen.electronic_structure.core import Spin
 
-from valyte.dos_plot import load_dos
+from valyte.dos_plot import load_dos, resolve_color
 
 
 def gradient_fill_rotated(y, x, ax=None, color=None, **kwargs):

@@ -32,7 +32,7 @@ pip install -e .
 
 ### Python
 
-Valyte requires **Python 3.8 or later**. All Python dependencies are installed automatically:
+Valyte requires **Python 3.9 or later**. All Python dependencies are installed automatically:
 
 | Package | Purpose |
 |---|---|
@@ -40,7 +40,6 @@ Valyte requires **Python 3.8 or later**. All Python dependencies are installed a
 | `matplotlib` | Plotting |
 | `pymatgen` | Crystal structure parsing |
 | `scipy` | Curve fitting |
-| `click` | CLI framework |
 | `seekpath` | K-path generation |
 
 ### VASP output files

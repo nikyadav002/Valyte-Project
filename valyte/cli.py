@@ -10,6 +10,7 @@ import warnings
 # Suppress pymatgen warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pymatgen")
 
+from valyte import __version__
 from valyte.supercell import create_supercell
 from valyte.band import generate_band_kpoints
 from valyte.band_plot import (
@@ -118,7 +119,7 @@ def _build_colors_map(colors_file, colors_args, inline_colors):
 
 def main():
     parser = argparse.ArgumentParser(description="Valyte: VASP Post-Processing Tool")
-    parser.add_argument("--version", action="version", version="%(prog)s 0.26.0")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
 
@@ -511,7 +512,7 @@ def main():
                 colors=colors_map,
             )
 
-        except Exception as e:
+        except Exception:
             import traceback
             traceback.print_exc()
             sys.exit(1)
