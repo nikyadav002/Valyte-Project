@@ -14,6 +14,8 @@ from pymatgen.io.vasp import Vasprun
 from pymatgen.electronic_structure.core import Spin
 import re
 
+from valyte.style import apply_style, get_font_weight, DEFAULT_PALETTE
+
 
 def load_color_file(filepath):
     """Load color mapping from JSON or plain key-value text file."""
@@ -274,30 +276,8 @@ def plot_dos(
 ):
     """Plot total and projected DOS with the Valyte style."""
 
-    font_map = {
-        "arial": "Arial",
-        "helvetica": "Helvetica",
-        "times": "Times New Roman",
-        "times new roman": "Times New Roman",
-    }
-    _weight = "bold" if bold else "normal"
-    font = font_map.get(font.lower(), "Arial")
-    mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 0.8
-    mpl.rcParams["font.weight"] = _weight
-    mpl.rcParams["font.size"] = 12
-    mpl.rcParams["xtick.direction"] = "in"
-    mpl.rcParams["ytick.direction"] = "in"
-    mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
-    mpl.rcParams["ytick.major.width"] = 1.2 if bold else 0.8
-    mpl.rcParams["xtick.minor.width"] = 0.8 if bold else 0.6
-    mpl.rcParams["ytick.minor.width"] = 0.8 if bold else 0.6
-    mpl.rcParams["xtick.major.size"] = 4 if bold else 5
-    mpl.rcParams["ytick.major.size"] = 4 if bold else 5
-    mpl.rcParams["xtick.minor.size"] = 2 if bold else 3
-    mpl.rcParams["ytick.minor.size"] = 2 if bold else 3
-
-    plt.style.use("default")
+    _weight = get_font_weight(bold)
+    apply_style(font=font, bold=bold, fontsize=12)
     fig, ax = plt.subplots(figsize=figsize)
 
     is_spin_polarized = Spin.down in dos.densities
@@ -520,26 +500,9 @@ def plot_dos_panels(
         elements shown within each.
     """
 
-    plt.style.use("default")
-    font_map = {
-        "arial": "Arial",
-        "helvetica": "Helvetica",
-        "times": "Times New Roman",
-        "times new roman": "Times New Roman",
-    }
-    _weight = "bold" if bold else "normal"
-    font = font_map.get(font.lower(), "Arial")
-    mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 0.8
-    mpl.rcParams["font.weight"] = _weight
-    mpl.rcParams["font.size"] = 11
-
-    palette = [
-        "#e63946", "#457b9d", "#2a9d8f", "#f4a261", "#6a4c93",
-        "#8ac926", "#1982c4", "#ca6702", "#ff595e", "#6a994e",
-        "#b5179e", "#219ebc", "#9b2226", "#606c38", "#0077b6",
-        "#bb3e03", "#005f73", "#ee9b00", "#7209b7", "#94d2bd",
-    ]
+    _weight = get_font_weight(bold)
+    apply_style(font=font, bold=bold, fontsize=11)
+    palette = DEFAULT_PALETTE
 
     is_spin_polarized = Spin.down in dos.densities
     x_mask = (dos.energies >= xlim[0]) & (dos.energies <= xlim[1])

@@ -1,10 +1,9 @@
 """Effective mass parabolic fit plotting."""
 
 import numpy as np
-import matplotlib as mpl
-mpl.use("agg")
-mpl.rcParams["axes.unicode_minus"] = False
 import matplotlib.pyplot as plt
+
+from valyte.style import apply_style, get_font_weight, save_plot
 
 
 def plot_effective_mass(results, output="valyte_effmass.png",
@@ -37,20 +36,8 @@ def plot_effective_mass(results, output="valyte_effmass.png",
         print("No effective mass fits to plot.")
         return
 
-    font_map = {
-        "arial": "Arial",
-        "helvetica": "Helvetica",
-        "times": "Times New Roman",
-        "times new roman": "Times New Roman",
-    }
-    _weight = "bold" if bold else "normal"
-    font = font_map.get(font.lower(), "Arial")
-    mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 1.4 if bold else 0.8
-    mpl.rcParams["font.weight"] = _weight
-    mpl.rcParams["font.size"] = 14
-    mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
-    mpl.rcParams["ytick.major.width"] = 1.2 if bold else 0.8
+    _weight = get_font_weight(bold)
+    apply_style(font=font, bold=bold, fontsize=14, linewidth=1.4 if bold else 0.8)
 
     has_holes = len(hole_masses) > 0
     has_electrons = len(electron_masses) > 0
@@ -82,10 +69,7 @@ def plot_effective_mass(results, output="valyte_effmass.png",
         _plot_panel(ax_cbm, electron_masses, color_cbm, linestyles, markers,
                     "Electron (CBM)", _weight)
 
-    plt.tight_layout(pad=1.5)
-    plt.savefig(output, dpi=dpi, bbox_inches="tight")
-    plt.close(fig)
-    print(f"Saved: {output}")
+    save_plot(fig, output, dpi=dpi)
 
 
 def _plot_panel(ax, masses, base_color, linestyles, markers, title, _weight="bold"):

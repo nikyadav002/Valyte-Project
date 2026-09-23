@@ -17,6 +17,7 @@ from pymatgen.electronic_structure.plotter import BSPlotter
 from pymatgen.electronic_structure.core import Spin
 
 from valyte.dos_plot import load_dos, resolve_color
+from valyte.style import apply_style, get_font_weight, save_plot
 
 
 def gradient_fill_rotated(y, x, ax=None, color=None, **kwargs):
@@ -109,29 +110,8 @@ def plot_combined(
         raise FileNotFoundError(f"{vasprun_path} not found")
 
     # Font and styling
-    plt.style.use("default")
-    font_map = {
-        "arial": "Arial",
-        "helvetica": "Helvetica",
-        "times": "Times New Roman",
-        "times new roman": "Times New Roman",
-    }
-    _weight = "bold" if bold else "normal"
-    font = font_map.get(font.lower(), "Arial")
-    mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 0.8
-    mpl.rcParams["font.weight"] = _weight
-    mpl.rcParams["font.size"] = 12
-    mpl.rcParams["xtick.direction"] = "in"
-    mpl.rcParams["ytick.direction"] = "in"
-    mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
-    mpl.rcParams["ytick.major.width"] = 1.2 if bold else 0.8
-    mpl.rcParams["xtick.minor.width"] = 0.8 if bold else 0.6
-    mpl.rcParams["ytick.minor.width"] = 0.8 if bold else 0.6
-    mpl.rcParams["xtick.major.size"] = 4 if bold else 5
-    mpl.rcParams["ytick.major.size"] = 4 if bold else 5
-    mpl.rcParams["xtick.minor.size"] = 2 if bold else 3
-    mpl.rcParams["ytick.minor.size"] = 2 if bold else 3
+    _weight = get_font_weight(bold)
+    apply_style(font=font, bold=bold, fontsize=12)
 
     # Load Band Structure
     try:

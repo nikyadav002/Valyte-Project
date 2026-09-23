@@ -24,7 +24,6 @@ from valyte.combined_plot import plot_combined
 from valyte.kpoints import generate_kpoints, generate_kpoints_interactive
 from valyte.potcar import generate_potcar
 from valyte.ipr import run_ipr, run_ipr_interactive
-from valyte.geoopt import check_convergence
 from valyte.effmass import compute_effective_masses, print_results, save_results_dat
 from valyte.effmass_plot import plot_effective_mass
 from valyte.converge import run_converge
@@ -145,6 +144,7 @@ def main():
     dos_parser.add_argument("--panel-by", choices=["element", "orbital"], default="element",
                             help="Grouping mode for panels: 'element' (default) or 'orbital'")
     dos_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
+    dos_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
     dos_parser.add_argument("--colors-file", help="Path to JSON or text file mapping elements/orbitals to colors")
     dos_parser.add_argument("-c", "--colors", nargs="+", help="Custom colors mapping or list (e.g., 'Fe(d)=red O(p)=blue' or 'red blue')")
 
@@ -201,6 +201,7 @@ def main():
         help="Colormap for --spin-texture (default: seismic).",
     )
     band_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
+    band_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
 
     # Band KPOINTS generation
     kpt_gen_parser = band_subparsers.add_parser("kpt-gen", help="Generate KPOINTS for band structure")
@@ -234,11 +235,6 @@ def main():
     ipr_parser.add_argument("-o", "--output", default="ipr_procar.dat", help="Output data filename")
     ipr_parser.add_argument("--details", action="store_true", help="Print per-k-point IPR values")
 
-    # Force check
-    force_check_parser = subparsers.add_parser("force-check", help="Geometry optimization force/energy convergence check")
-    force_check_parser.add_argument("outcar", nargs="?", default="OUTCAR", help="Path to OUTCAR file (default: OUTCAR)")
-    force_check_parser.add_argument("--ediffg", type=float, default=None, help="Force convergence threshold in eV/Å (e.g. 0.02)")
-
     # Convergence monitor
     conv_parser = subparsers.add_parser("converge", help="Monitor VASP relaxation/SCF convergence")
     conv_parser.add_argument("path", nargs="?", default=".", help="Directory or OSZICAR path (default: .)")
@@ -261,6 +257,7 @@ def main():
     effmass_parser.add_argument("--tol", type=float, default=1e-3, help="Degeneracy tolerance in eV (default: 1e-3)")
     effmass_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
     effmass_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
+    effmass_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
 
     # Bandgap
     bandgap_parser = subparsers.add_parser("bandgap", help="Print electronic bandgap")
@@ -285,6 +282,7 @@ def main():
     combined_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
     combined_parser.add_argument("--spin-resolved", action="store_true", help="Plot spin-up/spin-down channels in distinct colors")
     combined_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
+    combined_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
     combined_parser.add_argument("--colors-file", help="Path to JSON or text file mapping elements/orbitals to colors")
     combined_parser.add_argument("-c", "--colors", nargs="+", help="Custom colors mapping or list (e.g., 'Fe(d)=red O(p)=blue' or 'red blue')")
 
@@ -320,6 +318,7 @@ def main():
                     save_data=args.save_data,
                     group_by=args.panel_by,
                     bold=not args.no_bold,
+                    dpi=args.dpi,
                     colors=colors_map,
                 )
             else:
@@ -338,6 +337,7 @@ def main():
                     scale_factor=args.scale,
                     save_data=args.save_data,
                     bold=not args.no_bold,
+                    dpi=args.dpi,
                     colors=colors_map,
                 )
         except Exception as e:
@@ -406,16 +406,6 @@ def main():
             print(f"Error: {e}")
             sys.exit(1)
 
-    elif args.command == "force-check":
-        try:
-            check_convergence(
-                outcar_path=args.outcar,
-                ediffg=args.ediffg,
-            )
-        except Exception as e:
-            print(f"Error: {e}")
-            sys.exit(1)
-
     elif args.command == "effmass":
         try:
             results = compute_effective_masses(
@@ -428,7 +418,7 @@ def main():
             print_results(results)
 
             if args.plot:
-                plot_effective_mass(results, output=_apply_format(args.output, args.format), bold=not args.no_bold)
+                plot_effective_mass(results, output=_apply_format(args.output, args.format), dpi=args.dpi, bold=not args.no_bold)
 
             if args.save_data:
                 save_results_dat(results)
@@ -496,6 +486,7 @@ def main():
                 save_data=args.save_data,
                 spin_resolved=args.spin_resolved,
                 bold=not args.no_bold,
+                dpi=args.dpi,
                 colors=colors_map,
             )
 
@@ -544,6 +535,7 @@ def main():
                         spin_component=args.spin_texture,
                         cmap=args.spin_cmap,
                         bold=not args.no_bold,
+                        dpi=args.dpi,
                     )
                 elif args.tricolor:
                     tri_labels = args.tri_labels if args.tri_labels else list(args.tricolor)
@@ -561,6 +553,7 @@ def main():
                         font=args.font,
                         save_data=args.save_data,
                         bold=not args.no_bold,
+                        dpi=args.dpi,
                     )
                 else:
                     plot_band_structure(
@@ -573,6 +566,7 @@ def main():
                         save_data=args.save_data,
                         spin_resolved=args.spin_resolved,
                         bold=not args.no_bold,
+                        dpi=args.dpi,
                     )
             except Exception:
                 import traceback

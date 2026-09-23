@@ -14,6 +14,8 @@ from pymatgen.io.vasp import BSVasprun
 from pymatgen.electronic_structure.plotter import BSPlotter
 from pymatgen.electronic_structure.core import Spin
 
+from valyte.style import apply_style, get_font_weight, save_plot
+
 # Orbital index mapping in pymatgen PROCAR order:
 # 0:s  1:py  2:pz  3:px  4:dxy  5:dyz  6:dz2  7:dxz  8:x2-y2  9-15:f
 _ORBITAL_INDICES = {
@@ -239,20 +241,8 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
     if os.path.isdir(vasprun_path):
         vasprun_path = os.path.join(vasprun_path, "vasprun.xml")
 
-    font_map = {
-        "arial": "Arial",
-        "helvetica": "Helvetica",
-        "times": "Times New Roman",
-        "times new roman": "Times New Roman",
-    }
-    _weight = "bold" if bold else "normal"
-    font = font_map.get(font.lower(), "Arial")
-    mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 0.8
-    mpl.rcParams["font.weight"] = _weight
-    mpl.rcParams["font.size"] = 14
-    mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
-    mpl.rcParams["ytick.major.width"] = 1.2 if bold else 0.8
+    _weight = get_font_weight(bold)
+    apply_style(font=font, bold=bold, fontsize=14)
 
     try:
         vr = BSVasprun(vasprun_path, parse_projected_eigen=False)
@@ -390,20 +380,8 @@ def plot_orbital_band_structure(
     if os.path.isdir(vasprun_path):
         vasprun_path = os.path.join(vasprun_path, "vasprun.xml")
 
-    font_map = {
-        "arial": "Arial",
-        "helvetica": "Helvetica",
-        "times": "Times New Roman",
-        "times new roman": "Times New Roman",
-    }
-    _weight = "bold" if bold else "normal"
-    font = font_map.get(font.lower(), "Arial")
-    mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 0.8
-    mpl.rcParams["font.weight"] = _weight
-    mpl.rcParams["font.size"] = 14
-    mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
-    mpl.rcParams["ytick.major.width"] = 1.2 if bold else 0.8
+    _weight = get_font_weight(bold)
+    apply_style(font=font, bold=bold, fontsize=14)
 
     if tricolor is None:
         tricolor = ["s", "p", "d"]
@@ -557,20 +535,8 @@ def plot_spin_texture_band_structure(
     if os.path.isdir(vasprun_path):
         vasprun_path = os.path.join(vasprun_path, "vasprun.xml")
 
-    font_map = {
-        "arial": "Arial",
-        "helvetica": "Helvetica",
-        "times": "Times New Roman",
-        "times new roman": "Times New Roman",
-    }
-    _weight = "bold" if bold else "normal"
-    font = font_map.get(font.lower(), "Arial")
-    mpl.rcParams["font.family"] = font
-    mpl.rcParams["axes.linewidth"] = 0.8
-    mpl.rcParams["font.weight"] = _weight
-    mpl.rcParams["font.size"] = 14
-    mpl.rcParams["xtick.major.width"] = 1.2 if bold else 0.8
-    mpl.rcParams["ytick.major.width"] = 1.2 if bold else 0.8
+    _weight = get_font_weight(bold)
+    apply_style(font=font, bold=bold, fontsize=14)
 
     try:
         vr = BSVasprun(vasprun_path, parse_projected_eigen=True)
