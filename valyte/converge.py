@@ -1,14 +1,9 @@
-"""VASP convergence monitoring — OSZICAR/OUTCAR parsing and plotting."""
+"""VASP convergence monitoring — OSZICAR/OUTCAR parsing."""
 
 import gzip
 import os
 import re
 import sys
-
-import matplotlib as mpl
-mpl.use("agg")
-mpl.rcParams["axes.unicode_minus"] = False
-import matplotlib.pyplot as plt
 
 
 # ── File helpers ──────────────────────────────────────────────────────────────
@@ -350,25 +345,54 @@ def print_summary(steps, outcar_info, force_steps=None, fthresh=0.02):
                 mark = "—"
             print(f"  Status:             {mark}")
 
-        print()
-        print("  Energy:")
-        if last["E0"] is not None:
-            print(f"    Final E0        = {last['E0']:.8f} eV")
-        if last["dE"] is not None:
-            print(f"    ΔE (last step)  =  {last['dE']:.2e} eV")
-
-    if force_steps:
-        last_f = force_steps[-1]
-        print()
-        print("  Forces:")
-        if last_f["max_force"] is not None:
-            tick = "✓" if last_f["max_force"] < fthresh else "✗"
-            print(f"    Max |F| (final) =  {last_f['max_force']:.4f} eV/Å")
-            print(f"    Threshold       =  {fthresh:.4f} eV/Å    {tick}")
-        if last_f["pressure"] is not None:
+        # ── Per-step table (forces and/or energies) ───────────────────────
+        if force_steps:
             print()
-            print("  Pressure:")
-            print(f"    Final P         =  {last_f['pressure']:.2f} kB")
+            # Header
+            hdr = f"  {'Step':>5s}   {'E0 (eV)':>16s}   {'ΔE (eV)':>12s}   {'Max |F| (eV/Å)':>16s}"
+            has_pressure = any(
+                i < len(force_steps) and force_steps[i]["pressure"] is not None
+                for i in range(len(ionic))
+            )
+            if has_pressure:
+                hdr += f"   {'P (kB)':>10s}"
+            print(hdr)
+            print("  " + "─" * (len(hdr) - 2))
+
+            for i, s in enumerate(ionic):
+                e0_str = f"{s['E0']:.8f}" if s["E0"] is not None else "—"
+                de_str = f"{s['dE']:.2e}" if s["dE"] is not None else "—"
+                if i < len(force_steps) and force_steps[i]["max_force"] is not None:
+                    f_val = force_steps[i]["max_force"]
+                    f_str = f"{f_val:.4f}"
+                    tick = " ✓" if f_val < fthresh else ""
+                    f_str += tick
+                else:
+                    f_str = "—"
+                row = f"  {s['number']:5d}   {e0_str:>16s}   {de_str:>12s}   {f_str:>16s}"
+                if has_pressure:
+                    if i < len(force_steps) and force_steps[i]["pressure"] is not None:
+                        p_str = f"{force_steps[i]['pressure']:.2f}"
+                    else:
+                        p_str = "—"
+                    row += f"   {p_str:>10s}"
+                print(row)
+
+            print()
+            print(f"  Force threshold  =  {fthresh:.4f} eV/Å")
+            if force_steps and len(force_steps) >= len(ionic):
+                last_f = force_steps[len(ionic) - 1]
+                if last_f["max_force"] is not None:
+                    tick = "✓" if last_f["max_force"] < fthresh else "✗"
+                    print(f"  Final Max |F|    =  {last_f['max_force']:.4f} eV/Å    {tick}")
+        else:
+            # No forces — just print final energy summary
+            print()
+            print("  Energy:")
+            if last["E0"] is not None:
+                print(f"    Final E0        = {last['E0']:.8f} eV")
+            if last["dE"] is not None:
+                print(f"    ΔE (last step)  =  {last['dE']:.2e} eV")
 
     if wtime is not None:
         print()
@@ -378,240 +402,6 @@ def print_summary(steps, outcar_info, force_steps=None, fthresh=0.02):
             print(f"    Avg per step    =  {_fmt_time(wtime / n_done)}")
 
     print()
-
-
-# ── Matplotlib style ──────────────────────────────────────────────────────────
-
-def _apply_style(font="Arial", bold=True):
-    _weight = "bold" if bold else "normal"
-    font_map = {
-        "arial": "Arial", "helvetica": "Helvetica",
-        "times": "Times New Roman", "times new roman": "Times New Roman",
-    }
-    mpl.rcParams["font.family"]          = font_map.get(font.lower(), "Arial")
-    mpl.rcParams["axes.linewidth"]       = 1.4 if bold else 0.8
-    mpl.rcParams["font.weight"]          = _weight
-    mpl.rcParams["font.size"]            = 12
-    mpl.rcParams["xtick.major.width"]    = 1.2 if bold else 0.8
-    mpl.rcParams["ytick.major.width"]    = 1.2 if bold else 0.8
-    mpl.rcParams["xtick.direction"]      = "in"
-    mpl.rcParams["ytick.direction"]      = "in"
-    mpl.rcParams["xtick.minor.visible"]  = True
-    mpl.rcParams["ytick.minor.visible"]  = True
-    mpl.rcParams["xtick.minor.width"]    = 0.8 if bold else 0.6
-    mpl.rcParams["ytick.minor.width"]    = 0.8 if bold else 0.6
-    return _weight
-
-
-_PRIMARY = "#4b0082"
-_REFLINE = "#888888"
-
-
-def _style_ax(ax, bold=True):
-    lw = 1.4 if bold else 0.8
-    for sp in ax.spines.values():
-        sp.set_linewidth(lw)
-    ax.tick_params(which="both", direction="in", top=True, right=True)
-
-
-def _thresh_label(ax, y, label, log=False):
-    """Draw a dashed reference line and annotate at the right edge."""
-    ax.axhline(y, color=_REFLINE, lw=1.0, ls="--", zorder=1)
-    xlim = ax.get_xlim()
-    ypos = y * 1.5 if (log and y > 0) else y
-    ax.text(xlim[1], ypos, label, ha="right", va="bottom",
-            fontsize=9, color=_REFLINE, fontstyle="italic")
-
-
-# ── Ionic convergence plot ────────────────────────────────────────────────────
-
-def plot_ionic(steps, force_steps=None, ethresh=1e-4, fthresh=0.02,
-               show_mag=False, show_stress=False, start=1, end=None,
-               output="valyte_converge.png", dpi=400, font="Arial", bold=True):
-
-    plt.style.use("default")
-    _weight = _apply_style(font, bold=bold)
-
-    # Complete ionic steps only
-    ionic = [s for s in steps if not s.get("_incomplete") and s["E0"] is not None]
-    if not ionic:
-        print("No complete ionic steps to plot.")
-        return
-
-    # Apply start/end window
-    if end is not None:
-        ionic = [s for s in ionic if start <= s["number"] <= end]
-    else:
-        ionic = [s for s in ionic if s["number"] >= start]
-
-    if not ionic:
-        print("No ionic steps in the requested range.")
-        return
-
-    xs  = [s["number"] for s in ionic]
-    e0s = [s["E0"]     for s in ionic]
-    des = [abs(s["dE"]) if s["dE"] is not None else None for s in ionic]
-
-    has_mag = show_mag and any(s["mag"] is not None for s in ionic)
-
-    # Force/pressure arrays aligned to the filtered ionic list.
-    # force_steps[j] corresponds to the j-th COMPLETE ionic step overall,
-    # so we need the original position in the unfiltered complete list.
-    all_ionic = [s for s in steps if not s.get("_incomplete") and s["E0"] is not None]
-    ionic_to_orig = {id(s): i for i, s in enumerate(all_ionic)}
-
-    fmax_list, pres_list = [], []
-    if force_steps is not None:
-        for s in ionic:
-            orig_i = ionic_to_orig.get(id(s))
-            if orig_i is not None and orig_i < len(force_steps):
-                fmax_list.append(force_steps[orig_i]["max_force"])
-                pres_list.append(force_steps[orig_i]["pressure"])
-            else:
-                fmax_list.append(None)
-                pres_list.append(None)
-
-    has_forces = force_steps is not None and any(f is not None for f in fmax_list)
-    has_pressure = show_stress and any(p is not None for p in pres_list)
-
-    nrows = 2 + (1 if has_forces else 0) + (1 if has_pressure else 0) + (1 if has_mag else 0)
-
-    fig, axes = plt.subplots(
-        nrows, 1, sharex=True,
-        figsize=(6, 2.5 * nrows),
-        gridspec_kw={"hspace": 0.08},
-    )
-    axes = [axes] if nrows == 1 else list(axes)
-    row = 0
-
-    # Panel 1 — Energy
-    ax = axes[row]
-    row += 1
-    ax.plot(xs, e0s, color=_PRIMARY, lw=1.6, marker="o", ms=3.5, zorder=3)
-    ax.set_ylabel("Energy (eV)", fontweight=_weight)
-    _style_ax(ax, bold=bold)
-
-    # Panel 2 — |dE|
-    ax = axes[row]
-    row += 1
-    vx = [x for x, d in zip(xs, des) if d is not None and d > 0]
-    vd = [d for d in des if d is not None and d > 0]
-    if vx:
-        ax.plot(vx, vd, color=_PRIMARY, lw=1.6, marker="o", ms=3.5, zorder=3)
-    ax.set_yscale("log")
-    ax.set_ylabel("|ΔE| (eV)", fontweight=_weight)
-    _style_ax(ax, bold=bold)
-    if ethresh > 0:
-        ax.axhline(ethresh, color=_REFLINE, lw=1.0, ls="--", zorder=1)
-        xlim = ax.get_xlim()
-        ax.text(xlim[1], ethresh * 1.5, f"{ethresh:.0e} eV",
-                ha="right", va="bottom", fontsize=9,
-                color=_REFLINE, fontstyle="italic")
-
-    # Panel 3 (optional) — Max force
-    if has_forces:
-        ax = axes[row]
-        row += 1
-        fx = [x for x, f in zip(xs, fmax_list) if f is not None]
-        fy = [f for f in fmax_list if f is not None]
-        if fy:
-            ax.plot(fx, fy, color=_PRIMARY, lw=1.6, marker="o", ms=3.5, zorder=3)
-        ax.set_yscale("log")
-        ax.set_ylabel("Max |F| (eV/Å)", fontweight=_weight)
-        _style_ax(ax, bold=bold)
-        if fthresh > 0:
-            ax.axhline(fthresh, color=_REFLINE, lw=1.0, ls="--", zorder=1)
-            xlim = ax.get_xlim()
-            ax.text(xlim[1], fthresh * 1.5, f"{fthresh:.2f} eV/Å",
-                    ha="right", va="bottom", fontsize=9,
-                    color=_REFLINE, fontstyle="italic")
-
-    # Panel 4 (optional) — Pressure
-    if has_pressure:
-        ax = axes[row]
-        row += 1
-        px = [x for x, p in zip(xs, pres_list) if p is not None]
-        py = [p for p in pres_list if p is not None]
-        if py:
-            ax.plot(px, py, color=_PRIMARY, lw=1.6, marker="o", ms=3.5, zorder=3)
-        ax.axhline(0, color=_REFLINE, lw=1.0, ls="--", zorder=1)
-        ax.set_ylabel("Pressure (kB)", fontweight=_weight)
-        _style_ax(ax, bold=bold)
-
-    # Panel (optional) — Magnetization
-    if has_mag:
-        ax = axes[row]
-        row += 1
-        mx = [s["number"] for s in ionic if s["mag"] is not None]
-        my = [s["mag"]    for s in ionic if s["mag"] is not None]
-        ax.plot(mx, my, color="#e63946", lw=1.6, marker="o", ms=3.5, zorder=3)
-        ax.axhline(0, color=_REFLINE, lw=1.0, ls="--", zorder=1)
-        ax.set_ylabel("Mag. (μ_B)", fontweight=_weight)
-        _style_ax(ax, bold=bold)
-
-    axes[-1].set_xlabel("Ionic Step", fontweight=_weight)
-    axes[-1].set_xlim(min(xs) - 0.5, max(xs) + 0.5)
-
-    plt.savefig(output, dpi=dpi, bbox_inches="tight")
-    plt.close()
-    print(f"Saved plot: {output}")
-
-
-# ── Electronic convergence plot ───────────────────────────────────────────────
-
-def plot_electronic(steps, ethresh=None, output="valyte_converge.png",
-                    dpi=400, font="Arial", bold=True):
-
-    plt.style.use("default")
-    _weight = _apply_style(font, bold=bold)
-
-    cumulative_x, cumulative_y = [], []
-    boundaries = []
-    cursor = 0
-
-    for s in steps:
-        elec = s.get("elec_steps", [])
-        if not elec:
-            continue
-        start_x = cursor
-        for e in elec:
-            if e["dE"] > 0:
-                cumulative_x.append(cursor)
-                cumulative_y.append(e["dE"])
-            cursor += 1
-        if start_x > 0:
-            boundaries.append((start_x - 0.5, str(s["number"])))
-
-    if not cumulative_x:
-        print("No electronic step data found.")
-        return
-
-    fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(cumulative_x, cumulative_y, color=_PRIMARY, lw=1.2,
-            marker="o", ms=2.5, zorder=3)
-    ax.set_yscale("log")
-
-    ylim = ax.get_ylim()
-    for xb, label in boundaries:
-        ax.axvline(xb, color="#cccccc", lw=0.8, ls="--", zorder=1)
-        ax.text(xb + 0.5, ylim[1] * 0.7, label, fontsize=7,
-                color="#888888", va="top")
-
-    if ethresh is not None and ethresh > 0:
-        ax.axhline(ethresh, color=_REFLINE, lw=1.0, ls="--", zorder=1)
-        xlim = ax.get_xlim()
-        ax.text(xlim[1], ethresh * 1.5, f"{ethresh:.0e} eV",
-                ha="right", va="bottom", fontsize=9,
-                color=_REFLINE, fontstyle="italic")
-
-    ax.set_xlabel("Electronic Step", fontweight=_weight)
-    ax.set_ylabel("|ΔE| (eV)", fontweight=_weight)
-    _style_ax(ax, bold=bold)
-
-    plt.tight_layout()
-    plt.savefig(output, dpi=dpi, bbox_inches="tight")
-    plt.close()
-    print(f"Saved plot: {output}")
 
 
 # ── Data export ───────────────────────────────────────────────────────────────
@@ -638,9 +428,7 @@ def save_converge_dat(steps, force_steps=None, filepath="valyte_converge.dat"):
 # ── Main entry point ──────────────────────────────────────────────────────────
 
 def run_converge(path=".", electronic=False, forces=False, stress=False,
-                 ethresh=1e-4, fthresh=0.02, start=1, end=None,
-                 output="valyte_converge.png", save_data=False,
-                 no_plot=False, mag=False, bold=True):
+                 ethresh=1e-4, fthresh=0.02, save_data=False):
 
     # Resolve paths
     if os.path.isfile(path):
@@ -699,28 +487,6 @@ def run_converge(path=".", electronic=False, forces=False, stress=False,
     print_summary(steps, outcar_info,
                   force_steps=force_steps if forces else None,
                   fthresh=fthresh)
-
-    if no_plot:
-        if save_data:
-            save_converge_dat(steps, force_steps, "valyte_converge.dat")
-        return
-
-    if electronic:
-        ediff = outcar_info.get("ediff") or ethresh
-        plot_electronic(steps, ethresh=ediff, output=output, bold=bold)
-    else:
-        plot_ionic(
-            steps,
-            force_steps=force_steps if (forces or stress) else None,
-            ethresh=ethresh,
-            fthresh=fthresh,
-            show_mag=mag,
-            show_stress=stress,
-            start=start,
-            end=end,
-            output=output,
-            bold=bold,
-        )
 
     if save_data:
         save_converge_dat(steps, force_steps, "valyte_converge.dat")

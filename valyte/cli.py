@@ -243,18 +243,11 @@ def main():
     conv_parser = subparsers.add_parser("converge", help="Monitor VASP relaxation/SCF convergence")
     conv_parser.add_argument("path", nargs="?", default=".", help="Directory or OSZICAR path (default: .)")
     conv_parser.add_argument("--electronic", action="store_true", help="Show SCF convergence instead of ionic")
-    conv_parser.add_argument("--forces", action="store_true", help="Include max-force panel (requires OUTCAR)")
-    conv_parser.add_argument("--stress", action="store_true", help="Include pressure panel (requires OUTCAR)")
+    conv_parser.add_argument("--forces", action="store_true", help="Include forces and energies for all ionic steps (requires OUTCAR)")
+    conv_parser.add_argument("--stress", action="store_true", help="Include pressure data (requires OUTCAR)")
     conv_parser.add_argument("--ethresh", type=float, default=1e-4, help="Energy convergence threshold (eV)")
     conv_parser.add_argument("--fthresh", type=float, default=0.02, help="Force convergence threshold (eV/Å)")
-    conv_parser.add_argument("--start", type=int, default=1, help="First ionic step to show")
-    conv_parser.add_argument("--end", type=int, default=None, help="Last ionic step to show")
-    conv_parser.add_argument("-o", "--output", default="valyte_converge.png", help="Output plot filename")
     conv_parser.add_argument("--save-data", action="store_true", help="Save parsed data to valyte_converge.dat")
-    conv_parser.add_argument("--no-plot", action="store_true", help="Print terminal summary only")
-    conv_parser.add_argument("--mag", action="store_true", help="Include magnetization subplot")
-    conv_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
-    conv_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
 
     # Effective mass
     effmass_parser = subparsers.add_parser("effmass", help="Compute carrier effective masses at VBM/CBM")
@@ -452,13 +445,7 @@ def main():
                 stress=args.stress,
                 ethresh=args.ethresh,
                 fthresh=args.fthresh,
-                start=args.start,
-                end=args.end,
-                output=_apply_format(args.output, args.format),
                 save_data=args.save_data,
-                no_plot=args.no_plot,
-                mag=args.mag,
-                bold=not args.no_bold,
             )
         except Exception as e:
             print(f"Error: {e}")
