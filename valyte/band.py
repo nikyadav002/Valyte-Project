@@ -94,6 +94,9 @@ def generate_band_kpoints(poscar_path="POSCAR", npoints=40, output="KPOINTS", sy
         print("Proceeding without POTCAR generation.")
 
 
+# Adapted from sumo's sumo/symmetry/brad_crack_kpath.py
+# (https://github.com/SMTG-Bham/sumo), Copyright (c) 2017 Alex Ganose,
+# MIT licensed. See NOTICE.
 class BradCrackKpath:
     """Bradley-Cracknell K-path generation using SeeK-path output."""
 
@@ -143,6 +146,7 @@ class BradCrackKpath:
         lattice_type = self.get_lattice_type(spg_number)
         bravais = self._get_bravais_lattice(spg_symbol, lattice_type, a, b, c, unique)
 
+        # bradcrack.json is sumo's table (see NOTICE).
         json_file = ilr_files("valyte.data").joinpath("bradcrack.json")
         with json_file.open("r") as f:
             data = json.load(f)

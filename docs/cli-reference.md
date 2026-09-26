@@ -418,3 +418,35 @@ valyte combined -e "Fe(d)" "O(p)" --colors-file colors.json
 valyte combined --fermi --no-bold
 valyte combined --save-data --format pdf
 ```
+
+---
+
+## `valyte bandgap`
+
+Print the band gap read from `vasprun.xml` and nothing else.
+
+```bash
+valyte bandgap [filepath]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `filepath` | `.` | Directory or path to `vasprun.xml` |
+
+There are no other flags. The output is a single line:
+
+```
+Bandgap = 1.1743 eV
+```
+
+Only the magnitude is reported. For the VBM and CBM positions, or for whether
+the gap is direct, use [`valyte effmass`](#valyte-effmass) or read the band
+structure with [`valyte band`](#valyte-band).
+
+**Examples:**
+
+```bash
+valyte bandgap
+valyte bandgap /path/to/run
+valyte bandgap /path/to/run/vasprun.xml
+```

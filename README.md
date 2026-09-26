@@ -10,23 +10,65 @@
 </p>
 
 <p align="center">
-  <strong>Publication-quality VASP pre- and post-processing from a single CLI.</strong>
+  <strong>VASP pre- and post-processing from one command line.</strong>
 </p>
 
 ---
 
-Valyte turns raw VASP output into clean, publication-ready plots and analysis — band structures, density of states, effective masses, convergence diagnostics, and more — all from one command-line tool. No boilerplate scripts, no Jupyter notebooks, no manual formatting.
+If you run VASP, you know how this goes. The calculation finishes, and then you
+go looking for the plotting script you wrote six months ago and can't quite
+remember how to call. Valyte started as a way to stop doing that.
 
-## ✨ Highlights
+Point it at a finished run and it reads what VASP left behind (`vasprun.xml`,
+`PROCAR`, `OSZICAR`, `OUTCAR`, `POSCAR`) and hands you a figure or a data file.
+One command per job. The defaults try to give you something you could drop into
+a paper as-is, and when they don't suit you, almost all of them can be changed.
 
-- **One command, one plot** — `valyte band`, `valyte dos`, `valyte converge` — each produces a publication-quality figure with zero configuration.
-- **Orbital & spin resolution** — Tricolor orbital-projected bands, spin-resolved channels, and non-collinear spin textures out of the box.
-- **Smart pre-processing** — Automatic high-symmetry k-paths (Bradley–Cracknell), supercell generation, and POTCAR handling.
-- **Data export** — Every plot command supports `--save-data` to export raw data for custom post-processing.
-- **Vector output** — `--format pdf|svg|png` writes journal-ready figures straight from the CLI.
-- **Beautiful defaults** — Gradient fills, adaptive legends, and clean typography that look great in papers without tweaking.
+## Installation
 
-## 📸 Gallery
+```bash
+pip install valyte
+```
+
+To upgrade:
+
+```bash
+pip install --upgrade valyte
+```
+
+Or from source, if you'd like to poke at the code:
+
+```bash
+git clone https://github.com/nikyadav002/Valyte-Project
+cd Valyte-Project
+pip install -e .
+```
+
+### Requirements
+
+Python 3.9 or newer. Everything else (`numpy`, `matplotlib`, `pymatgen`,
+`scipy`, `seekpath`) comes along with the install, so there's nothing else to
+set up.
+
+The one exception is `valyte potcar`, which needs pymatgen to know where your
+pseudopotentials live. The [pymatgen POTCAR setup notes](https://pymatgen.org/installation.html#potcar-setup)
+cover that, and it's a one-time thing.
+
+## Quick start
+
+Change into a directory with your VASP output and try any of these:
+
+```bash
+valyte dos                      # density of states
+valyte band                     # band structure
+valyte converge                 # relaxation convergence table
+```
+
+If you'd rather see the whole thing end to end, the
+[Getting Started guide](https://valyte-project.readthedocs.io/en/latest/getting-started/)
+walks through a calculation from setup to finished figure.
+
+## Gallery
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/nikyadav002/Valyte-Project/main/valyte/valyte_dos.png" alt="DOS Plot Example" width="47%"/>
@@ -37,87 +79,62 @@ Valyte turns raw VASP output into clean, publication-ready plots and analysis �
   <em>Left: Orbital-resolved density of states with gradient fills. Right: Color-coded band structure with VBM at 0 eV.</em>
 </p>
 
-## 🚀 Quick Start
+## Commands
 
-```bash
-pip install valyte
-```
+### Setting up a calculation
 
-Then, from a directory containing your VASP output files:
-
-```bash
-valyte dos                      # Plot density of states
-valyte band                     # Plot band structure
-valyte converge                 # Check relaxation convergence
-```
-
-That's it. See the [Getting Started guide](https://valyte-project.readthedocs.io/en/latest/getting-started/) for a complete walkthrough.
-
----
-
-## Features
-
-### Pre-processing
-
-| Command | Description |
+| Command | What it does |
 |---|---|
-| `valyte supercell` | Generate supercells from POSCAR files |
-| `valyte kpt` | Interactive or batch KPOINTS generation (Monkhorst-Pack / Gamma) |
-| `valyte band kpt-gen` | Automatic high-symmetry k-path (Bradley–Cracknell by default) |
-| `valyte potcar` | Generate POTCAR from POSCAR species |
+| `valyte supercell nx ny nz` | Build a supercell from a POSCAR |
+| `valyte kpt` | Write a KPOINTS grid (Monkhorst-Pack or Gamma). Runs interactively if you pass no flags |
+| `valyte band kpt-gen` | Write a line-mode KPOINTS along a high-symmetry path, Bradley-Cracknell by default |
+| `valyte potcar` | Concatenate a POTCAR for the species in a POSCAR |
 
-### Post-processing
+### Analysing the output
 
-| Command | Description |
+| Command | What it does |
 |---|---|
-| `valyte dos` | Total and projected DOS with orbital resolution, custom colors (`--colors-file`, `--colors`), and gradient fills |
-| `valyte dos --panels` | Stacked per-element (or per-orbital) DOS panels |
+| `valyte dos` | Total and projected DOS, orbital resolved, with gradient fills |
+| `valyte dos --panels` | The same DOS split into stacked panels, one per element (`--panel-by orbital` for orbitals instead) |
+| `valyte band` | Band structure with the VBM placed at 0 eV |
+| `valyte band --tricolor s p d` | Orbital-projected bands colored by three specs. Accepts `s`, `Fe`, `Fe:d`, `O(p)` |
+| `valyte band --spin-resolved` | Spin-up and spin-down channels in separate colors |
+| `valyte band --spin-texture sz` | Non-collinear spin texture, bands colored by `sx`, `sy` or `sz` |
+| `valyte combined` | Band structure and DOS side by side on a shared energy axis |
+| `valyte effmass` | Carrier effective masses at the VBM and CBM by parabolic fitting |
+| `valyte ipr` | Inverse participation ratio from a PROCAR, for judging localization |
+| `valyte bandgap` | Print the band gap and nothing else |
+| `valyte converge` | Per-step energy, force and pressure table for a structural relaxation |
 
-| `valyte band` | Color-coded band structure with VBM aligned to 0 eV |
-| `valyte band --tricolor` | Orbital-resolved tricolor band structure |
-| `valyte band --spin-resolved` | Spin-polarized band structure — spin-up and spin-down channels |
-| `valyte band --spin-texture` | Non-collinear spin texture — bands colored by Sₓ, Sᵧ, or S_z |
-| `valyte ipr` | Inverse Participation Ratio from PROCAR |
-| `valyte effmass` | Carrier effective masses at VBM/CBM from parabolic fitting |
-| `valyte converge` | Per-step convergence table for structural relaxations |
+A couple of these need the right flags set in VASP: `--tricolor` and
+`--spin-texture` read projections out of `vasprun.xml`, so the run needs
+`LORBIT >= 11`, and spin texture needs a non-collinear calculation on top of
+that. If a plot comes out empty, that's usually why.
 
----
+### Shared options
 
-## Installation
+The four commands that draw figures (`dos`, `band`, `combined`, `effmass`) all
+take the same output flags, so once you know them they work everywhere:
 
-### From PyPI (recommended)
+| Flag | Effect |
+|---|---|
+| `--save-data` | Also write the plotted numbers to a `.dat` file |
+| `--format {png,pdf,svg}` | Figure format |
+| `--dpi` | Resolution for raster output (default 400) |
+| `--no-bold` | Lighter type and thinner lines, closer to a journal house style |
 
-```bash
-pip install valyte
-```
+A few small exceptions: `valyte effmass` only draws its fit if you ask for it
+with `--plot`, `valyte converge` takes `--save-data` even though it prints a
+table rather than a figure, and `valyte ipr` always writes `ipr_procar.dat`
+(pass `-o` to name it something else).
 
-### Update to the latest version
-
-```bash
-pip install --upgrade valyte
-```
-
-### From source (for development)
-
-```bash
-git clone https://github.com/nikyadav002/Valyte-Project
-cd Valyte-Project
-pip install -e .
-```
-
-### Requirements
-
-- Python ≥ 3.9
-- Dependencies (`numpy`, `matplotlib`, `pymatgen`, `scipy`, `seekpath`) are installed automatically.
-- For `valyte potcar`: requires [pymatgen pseudopotential setup](https://pymatgen.org/installation.html#potcar-setup).
-
----
+Every command has `--help` if you just want to see what's there, and the
+[CLI reference](https://valyte-project.readthedocs.io/en/latest/cli-reference/)
+has all of it on one page.
 
 ## Documentation
 
-**[📖 Full Documentation → valyte-project.readthedocs.io](https://valyte-project.readthedocs.io/en/latest/)**
-
-The documentation site includes:
+**[valyte-project.readthedocs.io](https://valyte-project.readthedocs.io/en/latest/)**
 
 | Page | What you'll find |
 |---|---|
@@ -131,23 +148,30 @@ The documentation site includes:
 | [CLI Reference](https://valyte-project.readthedocs.io/en/latest/cli-reference/) | Every command and flag in one searchable page |
 | [FAQ](https://valyte-project.readthedocs.io/en/latest/faq/) | Common issues and troubleshooting |
 
----
-
 ## Contributing
 
-Contributions are welcome! Whether it's a bug report, feature request, or pull request — all help is appreciated.
+Bug reports, ideas and pull requests are all genuinely welcome, and you don't
+need to be sure it's a real bug before saying something. If Valyte fell over on
+your files, the VASP output that caused it is the most useful thing you can
+send, because it's almost always an edge case in someone's calculation that I
+haven't seen yet.
 
-- 🐛 **Report a bug** — [Open an issue](https://github.com/nikyadav002/Valyte-Project/issues/new)
-- 💡 **Request a feature** — [Open an issue](https://github.com/nikyadav002/Valyte-Project/issues/new)
-- 🔧 **Submit a fix** — Fork, branch, and [open a pull request](https://github.com/nikyadav002/Valyte-Project/pulls)
+- [Open an issue](https://github.com/nikyadav002/Valyte-Project/issues/new) for a bug or an idea
+- [Open a pull request](https://github.com/nikyadav002/Valyte-Project/pulls) if you've already got a fix
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+[CONTRIBUTING.md](CONTRIBUTING.md) covers the development setup and how the code
+is laid out, if you want to dig in.
 
----
+## Acknowledgements
+
+Valyte stands on pymatgen, seekpath, numpy, scipy and matplotlib, and wouldn't
+be much without them. Thanks to everyone who maintains those, and to
+[sumo](https://github.com/SMTG-Bham/sumo) and the other open-source VASP tools
+that worked this out before I did.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+Released under the [MIT License](LICENSE).
 
 ---
 

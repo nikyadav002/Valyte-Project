@@ -4,39 +4,87 @@
 
 # Valyte
 
-**Publication-quality VASP pre- and post-processing from a single CLI.**
+**VASP pre- and post-processing from one command line.**
 
-Valyte turns raw VASP output into clean, publication-ready plots and analysis — band structures, density of states, effective masses, convergence diagnostics, and more — all from one command-line tool.
+If you run VASP, you know how this goes. The calculation finishes, and then you
+go looking for the plotting script you wrote six months ago and can't quite
+remember how to call. Valyte started as a way to stop doing that.
+
+Point it at a finished run and it reads what VASP left behind (`vasprun.xml`,
+`PROCAR`, `OSZICAR`, `OUTCAR`, `POSCAR`) and hands you a figure or a data file.
+One command per job. The defaults try to give you something you could drop into
+a paper as-is, and when they don't suit you, almost all of them can be changed.
 
 ---
 
-## What can Valyte do?
+## Quick start
 
-### Pre-processing
+```bash
+pip install valyte
+```
 
-Set up VASP calculations with minimal effort:
+Then change into a directory with your VASP output and try any of these:
 
-| Command | Description |
+```bash
+valyte dos                      # density of states
+valyte band                     # band structure
+valyte converge                 # relaxation convergence table
+```
+
+If you'd rather see the whole thing end to end, the
+**[Getting Started guide](getting-started.md)** walks through a calculation from
+setup to finished figure.
+
+---
+
+## Commands
+
+### Setting up a calculation
+
+| Command | What it does |
 |---|---|
-| [`valyte supercell`](preprocessing.md#supercell) | Generate supercells from POSCAR files |
-| [`valyte kpt`](preprocessing.md#k-points-scf-grid) | Interactive or batch KPOINTS generation (Monkhorst-Pack / Gamma) |
-| [`valyte band kpt-gen`](band.md#1-generate-kpoints) | Automatic high-symmetry k-path (Bradley–Cracknell by default) |
-| [`valyte potcar`](preprocessing.md#potcar) | Generate POTCAR from POSCAR species |
+| [`valyte supercell nx ny nz`](preprocessing.md#supercell) | Build a supercell from a POSCAR |
+| [`valyte kpt`](preprocessing.md#k-points-scf-grid) | Write a KPOINTS grid (Monkhorst-Pack or Gamma). Runs interactively if you pass no flags |
+| [`valyte band kpt-gen`](band.md#1-generate-kpoints) | Write a line-mode KPOINTS along a high-symmetry path, Bradley-Cracknell by default |
+| [`valyte potcar`](preprocessing.md#potcar) | Concatenate a POTCAR for the species in a POSCAR |
 
-### Post-processing
+### Analysing the output
 
-Generate publication-quality analysis and figures:
-
-| Command | Description |
+| Command | What it does |
 |---|---|
-| [`valyte dos`](dos.md) | Total and projected DOS with orbital resolution and gradient fills |
-| [`valyte band`](band.md#2-standard-band-structure-plot) | Color-coded band structure with VBM aligned to 0 eV |
-| [`valyte band --tricolor`](band.md#3-tricolor-orbital-resolved-plot) | Orbital-resolved tricolor band structure |
-| [`valyte band --spin-resolved`](band.md#4-spin-resolved-band-structure-collinear) | Spin-polarized plot — spin-up and spin-down channels |
-| [`valyte band --spin-texture`](band.md#5-non-collinear-spin-texture) | Non-collinear spin texture — bands colored by Sₓ, Sᵧ, or S_z |
-| [`valyte ipr`](ipr.md) | Inverse Participation Ratio from PROCAR |
-| [`valyte effmass`](effmass.md) | Carrier effective masses at VBM/CBM from parabolic fitting |
-| [`valyte converge`](converge.md) | Per-step convergence table for structural relaxations |
+| [`valyte dos`](dos.md) | Total and projected DOS, orbital resolved, with gradient fills |
+| [`valyte dos --panels`](dos.md) | The same DOS split into stacked panels, one per element (`--panel-by orbital` for orbitals instead) |
+| [`valyte band`](band.md#2-standard-band-structure-plot) | Band structure with the VBM placed at 0 eV |
+| [`valyte band --tricolor s p d`](band.md#3-tricolor-orbital-resolved-plot) | Orbital-projected bands colored by three specs. Accepts `s`, `Fe`, `Fe:d`, `O(p)` |
+| [`valyte band --spin-resolved`](band.md#4-spin-resolved-band-structure-collinear) | Spin-up and spin-down channels in separate colors |
+| [`valyte band --spin-texture sz`](band.md#5-non-collinear-spin-texture) | Non-collinear spin texture, bands colored by `sx`, `sy` or `sz` |
+| [`valyte combined`](combined.md) | Band structure and DOS side by side on a shared energy axis |
+| [`valyte effmass`](effmass.md) | Carrier effective masses at the VBM and CBM by parabolic fitting |
+| [`valyte ipr`](ipr.md) | Inverse participation ratio from a PROCAR, for judging localization |
+| [`valyte bandgap`](cli-reference.md#valyte-bandgap) | Print the band gap and nothing else |
+| [`valyte converge`](converge.md) | Per-step energy, force and pressure table for a structural relaxation |
+
+A couple of these need the right flags set in VASP: `--tricolor` and
+`--spin-texture` read projections out of `vasprun.xml`, so the run needs
+`LORBIT >= 11`, and spin texture needs a non-collinear calculation on top of
+that. If a plot comes out empty, that's usually why.
+
+### Shared options
+
+The four commands that draw figures (`dos`, `band`, `combined`, `effmass`) all
+take the same output flags, so once you know them they work everywhere:
+
+| Flag | Effect |
+|---|---|
+| `--save-data` | Also write the plotted numbers to a `.dat` file |
+| `--format {png,pdf,svg}` | Figure format |
+| `--dpi` | Resolution for raster output (default 400) |
+| `--no-bold` | Lighter type and thinner lines, closer to a journal house style |
+
+A few small exceptions: `valyte effmass` only draws its fit if you ask for it
+with `--plot`, `valyte converge` takes `--save-data` even though it prints a
+table rather than a figure, and `valyte ipr` always writes `ipr_procar.dat`
+(pass `-o` to name it something else).
 
 ---
 
@@ -53,24 +101,6 @@ Generate publication-quality analysis and figures:
 
 ---
 
-## Quick start
-
-```bash
-pip install valyte
-```
-
-Then, from a directory containing your VASP output:
-
-```bash
-valyte dos                      # Plot density of states
-valyte band                     # Plot band structure
-valyte converge                 # Check relaxation convergence
-```
-
-→ **[Getting Started guide](getting-started.md)** for a complete walkthrough.
-
----
-
 ## Explore the documentation
 
 <div class="grid cards" markdown>
@@ -79,7 +109,7 @@ valyte converge                 # Check relaxation convergence
 
     ---
 
-    Installation, prerequisites, and your first plot in under two minutes.
+    Installation, prerequisites, and your first plot.
 
     [:octicons-arrow-right-24: Get started](getting-started.md)
 
@@ -124,3 +154,12 @@ valyte converge                 # Check relaxation convergence
     [:octicons-arrow-right-24: CLI reference](cli-reference.md)
 
 </div>
+
+---
+
+## Acknowledgements
+
+Valyte stands on pymatgen, seekpath, numpy, scipy and matplotlib, and wouldn't
+be much without them. Thanks to everyone who maintains those, and to
+[sumo](https://github.com/SMTG-Bham/sumo) and the other open-source VASP tools
+that worked this out before I did.
