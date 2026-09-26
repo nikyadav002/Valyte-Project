@@ -168,11 +168,11 @@ cd /path/to/calculation
 valyte converge
 ```
 
-### Force panel shows no data
+### Force column shows no data
 
 **Cause:** `OUTCAR` is missing or incomplete.
 
-**Fix:** The `--forces` and `--stress` flags require `OUTCAR`. Without it, only energy and ΔE panels (from `OSZICAR`) are available. Make sure the `OUTCAR` file exists in the same directory as `OSZICAR`.
+**Fix:** The `Max |F|` and `P` columns are read from `OUTCAR`. Without it they show `—`, and only the `E0` and `ΔE` columns (from `OSZICAR`) are populated. Make sure the `OUTCAR` file exists in the same directory as `OSZICAR`.
 
 ---
 
@@ -182,10 +182,10 @@ valyte converge
 
 Yes. Valyte uses matplotlib's `Agg` backend by default, so it does not require a display. Plots are saved to files.
 
-For a quick convergence check without generating a plot:
+`valyte converge` prints its table straight to the terminal and writes no plot, so it works well over a slow connection:
 
 ```bash
-valyte converge --no-plot
+valyte converge
 ```
 
 ### How do I export data for custom plotting?

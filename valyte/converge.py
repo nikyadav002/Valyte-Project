@@ -24,26 +24,10 @@ def _find_file(directory, name):
 
 # ── OSZICAR parser ────────────────────────────────────────────────────────────
 
-_RE_ELEC = re.compile(
-    r"^\s*(?:DAV|RMM|CG|DIAG)\s*:\s*(\d+)\s+"
-    r"([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)\s+"
-    r"([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)",
-    re.IGNORECASE,
-)
-
 _RE_IONIC = re.compile(
     r"^\s*(\d+)\s+F=\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)"
     r"\s+E0=\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)"
     r"\s+d\s*E\s*=\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)"
-)
-
-_RE_IONIC_MD = re.compile(
-    r"^\s*(\d+)\s+T=\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)"
-    r".*?E=\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)"
-    r"\s+F=\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)"
-    r"\s+E0=\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)"
-    r".*?EK=\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)",
-    re.DOTALL,
 )
 
 _RE_MAG = re.compile(r"mag=\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)")
@@ -62,45 +46,16 @@ def parse_oszicar(path):
         E0          float  energy sigma→0 (eV)
         dE          float  energy change (eV)
         mag         float or None
-        is_md       bool
-        T           float or None  (MD temperature K)
-        EK          float or None  (kinetic energy eV)
-        elec_steps  list of {step, E, dE}
 
-    Trailing electronic steps with no ionic summary are attached to a
-    synthetic entry with _incomplete=True and ionic fields set to None.
+    Only completed ionic steps are returned; a trailing SCF cycle with no
+    ionic summary yet is ignored.
     """
     steps = []
-    pending_elec = []
-    prev_ionic_number = 0
 
     with _open(path) as fh:
         for raw in fh:
             line = raw.rstrip()
 
-            # MD ionic line (more fields — try first)
-            m = _RE_IONIC_MD.match(line)
-            if m:
-                step = {
-                    "number": int(m.group(1)),
-                    "F":  _float(m.group(4)),
-                    "E0": _float(m.group(5)),
-                    "dE": _float(m.group(4)) - _float(m.group(3)),
-                    "mag": None,
-                    "is_md": True,
-                    "T":  _float(m.group(2)),
-                    "EK": _float(m.group(6)),
-                    "elec_steps": list(pending_elec),
-                }
-                mm = _RE_MAG.search(line)
-                if mm:
-                    step["mag"] = _float(mm.group(1))
-                pending_elec.clear()
-                steps.append(step)
-                prev_ionic_number = step["number"]
-                continue
-
-            # Regular ionic summary
             m = _RE_IONIC.match(line)
             if m:
                 step = {
@@ -109,36 +64,12 @@ def parse_oszicar(path):
                     "E0": _float(m.group(3)),
                     "dE": _float(m.group(4)),
                     "mag": None,
-                    "is_md": False,
-                    "T":  None,
-                    "EK": None,
-                    "elec_steps": list(pending_elec),
                 }
                 mm = _RE_MAG.search(line)
                 if mm:
                     step["mag"] = _float(mm.group(1))
-                pending_elec.clear()
                 steps.append(step)
-                prev_ionic_number = step["number"]
                 continue
-
-            # Electronic step
-            m = _RE_ELEC.match(line)
-            if m:
-                pending_elec.append({
-                    "step": int(m.group(1)),
-                    "E":   _float(m.group(2)),
-                    "dE":  abs(_float(m.group(3))),
-                })
-
-    if pending_elec:
-        steps.append({
-            "number": prev_ionic_number + 1,
-            "F": None, "E0": None, "dE": None,
-            "mag": None, "is_md": False, "T": None, "EK": None,
-            "elec_steps": list(pending_elec),
-            "_incomplete": True,
-        })
 
     return steps
 
@@ -209,7 +140,7 @@ def parse_outcar_header(path):
     return info
 
 
-def parse_outcar_forces(path, nions):
+def parse_outcar_forces(path):
     """Single-pass OUTCAR parse for per-ionic-step max force and pressure.
 
     Returns list of {max_force, pressure}, one per ionic step.
@@ -300,23 +231,25 @@ def _fmt_time(seconds):
 
 def _calc_type(ibrion, nsw):
     if ibrion is None:
-        return "Unknown"
-    if ibrion == 0:
-        return "MD"
-    if ibrion == -1 or nsw == 0:
-        return "Single-point"
-    return f"Relaxation (IBRION = {ibrion}, NSW = {nsw})"
+        return "Relaxation"
+    if nsw:
+        return f"Relaxation (IBRION = {ibrion}, NSW = {nsw})"
+    return f"Relaxation (IBRION = {ibrion})"
 
 
 # ── Terminal summary ──────────────────────────────────────────────────────────
 
-def print_summary(steps, outcar_info, force_steps=None, fthresh=0.02):
-    ionic = [s for s in steps if not s.get("_incomplete")]
+def print_summary(steps, outcar_info, force_steps=None):
+    ionic = steps
     ibrion = outcar_info.get("ibrion")
     nsw    = outcar_info.get("nsw")
     ediffg = outcar_info.get("ediffg")
     wtime  = outcar_info.get("walltime_s")
-    is_md  = any(s["is_md"] for s in ionic) if ionic else False
+
+    # EDIFFG sets the criterion: negative is a force threshold in eV/Å,
+    # positive is an energy threshold in eV.
+    fthresh = abs(ediffg) if ediffg is not None and ediffg < 0 else None
+    ethresh = ediffg if ediffg is not None and ediffg > 0 else None
 
     print("Convergence")
     print("═" * 11)
@@ -324,75 +257,80 @@ def print_summary(steps, outcar_info, force_steps=None, fthresh=0.02):
     print(f"  Calculation type:   {_calc_type(ibrion, nsw)}")
 
     n_done = len(ionic)
-    if nsw and not is_md:
+    if nsw:
         print(f"  Ionic steps:        {n_done} / {nsw}")
     else:
         print(f"  Ionic steps:        {n_done}")
 
     if ionic:
         last = ionic[-1]
-        if not is_md:
-            if ediffg is not None and ediffg < 0:
-                fok = (force_steps and force_steps[-1]["max_force"] is not None
-                       and force_steps[-1]["max_force"] < abs(ediffg))
-                mark = "✓ Converged" if fok else "✗ Not converged"
-            elif ediffg is not None and ediffg > 0:
-                eok = last["dE"] is not None and abs(last["dE"]) < ediffg
-                mark = "✓ Converged" if eok else "✗ Not converged"
-            elif nsw and n_done < nsw:
-                mark = "Running / incomplete"
+
+        if fthresh is not None:
+            fok = (force_steps and force_steps[-1]["max_force"] is not None
+                   and force_steps[-1]["max_force"] < fthresh)
+            mark = "✓ Converged" if fok else "✗ Not converged"
+        elif ethresh is not None:
+            eok = last["dE"] is not None and abs(last["dE"]) < ethresh
+            mark = "✓ Converged" if eok else "✗ Not converged"
+        elif nsw and n_done < nsw:
+            mark = "Running / incomplete"
+        else:
+            mark = "—"
+        print(f"  Status:             {mark}")
+
+        # ── Per-step table ────────────────────────────────────────────────
+        # Step/E0/ΔE come from OSZICAR; Max |F| and P need OUTCAR and show
+        # "—" when it is absent or does not carry the value.
+        print()
+        hdr = (f"  {'Step':>5s}   {'E0 (eV)':>16s}   {'ΔE (eV)':>14s}"
+               f"   {'Max |F| (eV/Å)':>16s}   {'P (kB)':>10s}")
+        print(hdr)
+        print("  " + "─" * (len(hdr) - 2))
+
+        for i, s in enumerate(ionic):
+            e0_str = f"{s['E0']:.8f}" if s["E0"] is not None else "—"
+
+            if s["dE"] is not None:
+                de_str = f"{s['dE']:.2e}"
+                if ethresh is not None and abs(s["dE"]) < ethresh:
+                    de_str += " ✓"
             else:
-                mark = "—"
-            print(f"  Status:             {mark}")
+                de_str = "—"
 
-        # ── Per-step table (forces and/or energies) ───────────────────────
-        if force_steps:
+            fs = force_steps[i] if force_steps and i < len(force_steps) else None
+            if fs and fs["max_force"] is not None:
+                f_val = fs["max_force"]
+                f_str = f"{f_val:.4f}"
+                if fthresh is not None and f_val < fthresh:
+                    f_str += " ✓"
+            else:
+                f_str = "—"
+
+            p_str = f"{fs['pressure']:.2f}" if fs and fs["pressure"] is not None else "—"
+
+            print(f"  {s['number']:5d}   {e0_str:>16s}   {de_str:>14s}"
+                  f"   {f_str:>16s}   {p_str:>10s}")
+
+        # ── Criterion footer ──────────────────────────────────────────────
+        if fthresh is not None:
             print()
-            # Header
-            hdr = f"  {'Step':>5s}   {'E0 (eV)':>16s}   {'ΔE (eV)':>12s}   {'Max |F| (eV/Å)':>16s}"
-            has_pressure = any(
-                i < len(force_steps) and force_steps[i]["pressure"] is not None
-                for i in range(len(ionic))
-            )
-            if has_pressure:
-                hdr += f"   {'P (kB)':>10s}"
-            print(hdr)
-            print("  " + "─" * (len(hdr) - 2))
-
-            for i, s in enumerate(ionic):
-                e0_str = f"{s['E0']:.8f}" if s["E0"] is not None else "—"
-                de_str = f"{s['dE']:.2e}" if s["dE"] is not None else "—"
-                if i < len(force_steps) and force_steps[i]["max_force"] is not None:
-                    f_val = force_steps[i]["max_force"]
-                    f_str = f"{f_val:.4f}"
-                    tick = " ✓" if f_val < fthresh else ""
-                    f_str += tick
-                else:
-                    f_str = "—"
-                row = f"  {s['number']:5d}   {e0_str:>16s}   {de_str:>12s}   {f_str:>16s}"
-                if has_pressure:
-                    if i < len(force_steps) and force_steps[i]["pressure"] is not None:
-                        p_str = f"{force_steps[i]['pressure']:.2f}"
-                    else:
-                        p_str = "—"
-                    row += f"   {p_str:>10s}"
-                print(row)
-
-            print()
+            print(f"  EDIFFG           =  {ediffg:g}  →  force criterion")
             print(f"  Force threshold  =  {fthresh:.4f} eV/Å")
             if force_steps and len(force_steps) >= len(ionic):
                 last_f = force_steps[len(ionic) - 1]
                 if last_f["max_force"] is not None:
                     tick = "✓" if last_f["max_force"] < fthresh else "✗"
                     print(f"  Final Max |F|    =  {last_f['max_force']:.4f} eV/Å    {tick}")
-        else:
-            # No forces — just print final energy summary
+        elif ethresh is not None:
             print()
-            print("  Energy:")
-            if last["E0"] is not None:
-                print(f"    Final E0        = {last['E0']:.8f} eV")
+            print(f"  EDIFFG           =  {ediffg:g}  →  energy criterion")
+            print(f"  Energy threshold =  {ethresh:.2e} eV")
             if last["dE"] is not None:
-                print(f"    ΔE (last step)  =  {last['dE']:.2e} eV")
+                tick = "✓" if abs(last["dE"]) < ethresh else "✗"
+                print(f"  Final ΔE         =  {last['dE']:.2e} eV       {tick}")
+        else:
+            print()
+            print("  EDIFFG not found in INCAR or OUTCAR — no convergence criterion.")
 
     if wtime is not None:
         print()
@@ -407,7 +345,7 @@ def print_summary(steps, outcar_info, force_steps=None, fthresh=0.02):
 # ── Data export ───────────────────────────────────────────────────────────────
 
 def save_converge_dat(steps, force_steps=None, filepath="valyte_converge.dat"):
-    ionic = [s for s in steps if not s.get("_incomplete") and s["E0"] is not None]
+    ionic = [s for s in steps if s["E0"] is not None]
     with open(filepath, "w") as f:
         f.write("# Step  E0(eV)  dE(eV)  F_max(eV/A)  P(kB)  mag\n")
         for i, s in enumerate(ionic):
@@ -427,8 +365,7 @@ def save_converge_dat(steps, force_steps=None, filepath="valyte_converge.dat"):
 
 # ── Main entry point ──────────────────────────────────────────────────────────
 
-def run_converge(path=".", electronic=False, forces=False, stress=False,
-                 ethresh=1e-4, fthresh=0.02, save_data=False):
+def run_converge(path=".", save_data=False):
 
     # Resolve paths
     if os.path.isfile(path):
@@ -462,31 +399,25 @@ def run_converge(path=".", electronic=False, forces=False, stress=False,
     if incar_path:
         try:
             incar_info = _parse_incar(incar_path)
-            for k in ("ibrion", "nsw", "ediff", "ediffg"):
+            # EDIFFG is read from INCAR when present; the OUTCAR echo is the
+            # fallback for directories where only OUTCAR was kept.
+            if incar_info.get("ediffg") is not None:
+                outcar_info["ediffg"] = incar_info["ediffg"]
+            for k in ("ibrion", "nsw", "ediff"):
                 if outcar_info.get(k) is None:
                     outcar_info[k] = incar_info.get(k)
         except Exception:
             pass
 
-    # Use EDIFF from job files as ethresh default
-    if outcar_info.get("ediff") is not None and ethresh == 1e-4:
-        ethresh = outcar_info["ediff"]
-
-    # Parse forces/stress only when requested
+    # Forces and pressure, when an OUTCAR is available
     force_steps = None
-    if (forces or stress) and outcar_path:
-        nions = outcar_info.get("nions")
-        if nions:
-            try:
-                force_steps = parse_outcar_forces(outcar_path, nions)
-            except Exception as e:
-                print(f"Warning: could not parse forces from OUTCAR: {e}")
-        else:
-            print("Warning: NIONS not found — skipping force parsing.")
+    if outcar_path:
+        try:
+            force_steps = parse_outcar_forces(outcar_path)
+        except Exception as e:
+            print(f"Warning: could not parse forces from OUTCAR: {e}")
 
-    print_summary(steps, outcar_info,
-                  force_steps=force_steps if forces else None,
-                  fthresh=fthresh)
+    print_summary(steps, outcar_info, force_steps=force_steps)
 
     if save_data:
         save_converge_dat(steps, force_steps, "valyte_converge.dat")

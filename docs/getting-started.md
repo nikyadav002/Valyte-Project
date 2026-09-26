@@ -122,13 +122,13 @@ This produces `valyte_band.png` with the VBM set to 0 eV, valence bands in purpl
 
 ### Convergence check
 
-For a relaxation or single-point calculation:
+For a structural relaxation:
 
 ```bash
 valyte converge
 ```
 
-This reads `OSZICAR` and produces a multi-panel convergence plot showing energy and ΔE across ionic steps.
+This reads `OSZICAR` and `OUTCAR` and prints a per-step table of the energy, ΔE, max force, and pressure. The convergence criterion comes from `EDIFFG`.
 
 ---
 
@@ -137,9 +137,8 @@ This reads `OSZICAR` and produces a multi-panel convergence plot showing energy 
 ### "I just finished a relaxation"
 
 ```bash
-valyte converge --forces              # Check energy + force convergence
-valyte converge --forces --stress     # Also check pressure
-valyte converge --no-plot             # Quick terminal summary (no plot)
+valyte converge                       # Per-step energy, force, and pressure
+valyte converge --save-data           # Also write valyte_converge.dat
 ```
 
 ### "I have a band structure calculation"
@@ -179,7 +178,7 @@ valyte converge --save-data           # → valyte_converge.dat
 - **[Band Structure](band.md)** — All five band structure modes explained
 - **[DOS](dos.md)** — Element and orbital selection, smart features
 - **[Effective Mass](effmass.md)** — Parabolic fitting for carrier masses
-- **[Convergence](converge.md)** — Multi-panel convergence diagnostics
+- **[Convergence](converge.md)** — Relaxation convergence diagnostics
 - **[IPR](ipr.md)** — Wavefunction localization analysis
 - **[Pre-processing](preprocessing.md)** — Supercells, k-points, and POTCAR
 - **[CLI Reference](cli-reference.md)** — Every command and flag in one page

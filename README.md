@@ -48,7 +48,7 @@ Then, from a directory containing your VASP output files:
 ```bash
 valyte dos                      # Plot density of states
 valyte band                     # Plot band structure
-valyte converge --forces        # Check relaxation convergence
+valyte converge                 # Check relaxation convergence
 ```
 
 That's it. See the [Getting Started guide](https://valyte-project.readthedocs.io/en/latest/getting-started/) for a complete walkthrough.
@@ -79,7 +79,7 @@ That's it. See the [Getting Started guide](https://valyte-project.readthedocs.io
 | `valyte band --spin-texture` | Non-collinear spin texture — bands colored by Sₓ, Sᵧ, or S_z |
 | `valyte ipr` | Inverse Participation Ratio from PROCAR |
 | `valyte effmass` | Carrier effective masses at VBM/CBM from parabolic fitting |
-| `valyte converge` | Ionic and SCF convergence monitor with multi-panel plots |
+| `valyte converge` | Per-step convergence table for structural relaxations |
 
 ---
 
@@ -125,7 +125,7 @@ The documentation site includes:
 | [Band Structure](https://valyte-project.readthedocs.io/en/latest/band/) | Standard, tricolor, spin-resolved, and spin-texture modes |
 | [Density of States](https://valyte-project.readthedocs.io/en/latest/dos/) | Total and projected DOS with orbital resolution |
 | [Effective Mass](https://valyte-project.readthedocs.io/en/latest/effmass/) | Carrier effective masses from parabolic fitting |
-| [Convergence](https://valyte-project.readthedocs.io/en/latest/converge/) | Ionic, electronic, force, and pressure convergence |
+| [Convergence](https://valyte-project.readthedocs.io/en/latest/converge/) | Relaxation convergence: energy, force, and pressure |
 | [IPR](https://valyte-project.readthedocs.io/en/latest/ipr/) | Wavefunction localization analysis |
 | [Pre-processing](https://valyte-project.readthedocs.io/en/latest/preprocessing/) | Supercells, k-points, and POTCAR generation |
 | [CLI Reference](https://valyte-project.readthedocs.io/en/latest/cli-reference/) | Every command and flag in one searchable page |

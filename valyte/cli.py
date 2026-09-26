@@ -236,13 +236,8 @@ def main():
     ipr_parser.add_argument("--details", action="store_true", help="Print per-k-point IPR values")
 
     # Convergence monitor
-    conv_parser = subparsers.add_parser("converge", help="Monitor VASP relaxation/SCF convergence")
+    conv_parser = subparsers.add_parser("converge", help="Monitor VASP structural relaxation convergence")
     conv_parser.add_argument("path", nargs="?", default=".", help="Directory or OSZICAR path (default: .)")
-    conv_parser.add_argument("--electronic", action="store_true", help="Show SCF convergence instead of ionic")
-    conv_parser.add_argument("--forces", action="store_true", help="Include forces and energies for all ionic steps (requires OUTCAR)")
-    conv_parser.add_argument("--stress", action="store_true", help="Include pressure data (requires OUTCAR)")
-    conv_parser.add_argument("--ethresh", type=float, default=1e-4, help="Energy convergence threshold (eV)")
-    conv_parser.add_argument("--fthresh", type=float, default=0.02, help="Force convergence threshold (eV/Å)")
     conv_parser.add_argument("--save-data", action="store_true", help="Save parsed data to valyte_converge.dat")
 
     # Effective mass
@@ -430,11 +425,6 @@ def main():
         try:
             run_converge(
                 path=args.path,
-                electronic=args.electronic,
-                forces=args.forces,
-                stress=args.stress,
-                ethresh=args.ethresh,
-                fthresh=args.fthresh,
                 save_data=args.save_data,
             )
         except Exception as e:

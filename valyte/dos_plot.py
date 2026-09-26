@@ -156,7 +156,13 @@ def load_dos(vasprun, elements=None, **_):
     if not os.path.exists(vasprun):
         raise FileNotFoundError(f"{vasprun} not found")
 
-    vr = Vasprun(vasprun)
+    vr = Vasprun(
+        vasprun,
+        parse_dos=True,
+        parse_eigen=True,
+        parse_projected_eigen=False,
+        parse_potcar_file=False,
+    )
     dos = vr.complete_dos
     efermi = dos.efermi
 

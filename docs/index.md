@@ -36,7 +36,7 @@ Generate publication-quality analysis and figures:
 | [`valyte band --spin-texture`](band.md#5-non-collinear-spin-texture) | Non-collinear spin texture — bands colored by Sₓ, Sᵧ, or S_z |
 | [`valyte ipr`](ipr.md) | Inverse Participation Ratio from PROCAR |
 | [`valyte effmass`](effmass.md) | Carrier effective masses at VBM/CBM from parabolic fitting |
-| [`valyte converge`](converge.md) | Ionic and SCF convergence monitor with multi-panel plots |
+| [`valyte converge`](converge.md) | Per-step convergence table for structural relaxations |
 
 ---
 
@@ -64,7 +64,7 @@ Then, from a directory containing your VASP output:
 ```bash
 valyte dos                      # Plot density of states
 valyte band                     # Plot band structure
-valyte converge --forces        # Check relaxation convergence
+valyte converge                 # Check relaxation convergence
 ```
 
 → **[Getting Started guide](getting-started.md)** for a complete walkthrough.
@@ -111,7 +111,7 @@ valyte converge --forces        # Check relaxation convergence
 
     ---
 
-    Multi-panel convergence monitoring for relaxations and SCF.
+    Per-step convergence tables for structural relaxations.
 
     [:octicons-arrow-right-24: Convergence](converge.md)
 

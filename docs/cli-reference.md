@@ -351,7 +351,8 @@ valyte effmass --save-data
 
 ## `valyte converge`
 
-Monitor and visualize VASP convergence from `OSZICAR` and optionally `OUTCAR`.
+Print a per-ionic-step convergence table for a structural relaxation, from
+`OSZICAR` and `OUTCAR`.
 
 ```bash
 valyte converge [path] [options]
@@ -360,30 +361,19 @@ valyte converge [path] [options]
 | Option | Default | Description |
 |---|---|---|
 | `path` | `.` | Directory or path to `OSZICAR` |
-| `--electronic` | off | Show SCF convergence instead of ionic |
-| `--forces` | off | Add max-force panel (requires `OUTCAR`) |
-| `--stress` | off | Add pressure panel (requires `OUTCAR`) |
-| `--mag` | off | Add magnetization subplot |
-| `--ethresh` | from `OUTCAR` / `1e-4` | Energy convergence reference line (eV) |
-| `--fthresh` | `0.02` | Force convergence reference line (eV/Å) |
-| `--start` | `1` | First ionic step to include |
-| `--end` | last | Last ionic step to include |
-| `--no-plot` | off | Terminal summary only — no plot |
-| `-o`, `--output` | `valyte_converge.png` | Output plot filename |
-| `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--save-data` | off | Save data to `valyte_converge.dat` |
-| `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+
+The convergence criterion is read from `EDIFFG` (`INCAR` first, then the
+`OUTCAR` echo): negative is a force threshold in eV/Å, positive an energy
+threshold in eV.
 
 **Examples:**
 
 ```bash
 valyte converge
-valyte converge --forces --stress
-valyte converge --electronic
-valyte converge --no-plot
-valyte converge /path/to/run --start 5 --end 30
-valyte converge --forces --format pdf
-valyte converge --forces -o converge.png --save-data
+valyte converge /path/to/run
+valyte converge /path/to/run/OSZICAR
+valyte converge --save-data
 ```
 
 ---
