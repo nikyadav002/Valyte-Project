@@ -29,6 +29,7 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 | `-o`, `--output` | `valyte_dos.png` | Output filename |
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
+| `--dpi` | `400` | Output figure resolution in DPI |
 | `--save-data` | off | Save DOS data to `valyte_dos.dat` |
 | `--panels` | off | Split DOS into vertically stacked panels (one per element) |
 | `--panel-by` | `element` | Grouping mode for panels: `element` or `orbital` |

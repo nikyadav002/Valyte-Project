@@ -148,6 +148,7 @@ valyte band [options]
 | `-o`, `--output` | `valyte_band.png` | Output filename |
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
+| `--dpi` | `400` | Output figure resolution in DPI |
 | `--save-data` | off | Save band data to `valyte_band.dat` |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
@@ -243,6 +244,7 @@ valyte dos [path/to/vasprun.xml] [options]
 | `-o`, `--output` | `valyte_dos.png` | Output filename |
 | `--font` | `Arial` | Font family |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
+| `--dpi` | `400` | Output figure resolution in DPI |
 | `--save-data` | off | Save DOS data to `valyte_dos.dat` |
 | `--panels` | off | Split DOS into stacked panels (one per element) |
 | `--panel-by` | `element` | Grouping for panels: `element` or `orbital` |
@@ -329,6 +331,7 @@ valyte effmass [options]
 | `--plot` | off | Save parabolic fit plot |
 | `-o`, `--output` | `valyte_effmass.png` | Output plot filename (with `--plot`) |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
+| `--dpi` | `400` | Output figure resolution in DPI (used with `--plot`) |
 | `--save-data` | off | Save results to `valyte_effmass.dat` |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
@@ -412,6 +415,7 @@ valyte combined [path] [options]
 | `--height` | `3.2` | Plot height in inches |
 | `--save-data` | off | Save both band and DOS data to text files |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
+| `--dpi` | `400` | Output figure resolution in DPI |
 | `--spin-resolved` | off | Plot spin-up/spin-down channels in distinct colors |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 

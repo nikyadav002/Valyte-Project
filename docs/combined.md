@@ -28,6 +28,7 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 | `--width` | `3.2` | Plot width in inches |
 | `--height` | `3.2` | Plot height in inches |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
+| `--dpi` | `400` | Output figure resolution in DPI |
 | `--save-data` | off | Save both band and DOS data to text files |
 | `--spin-resolved` | off | Plot spin-up/spin-down channels in distinct colors |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |

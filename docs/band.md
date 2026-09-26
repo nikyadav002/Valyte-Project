@@ -74,6 +74,7 @@ valyte band [options]
 | `-o`, `--output` | `valyte_band.png` | Output filename |
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
+| `--dpi` | `400` | Output figure resolution in DPI |
 | `--save-data` | off | Save band data to `valyte_band.dat` |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
