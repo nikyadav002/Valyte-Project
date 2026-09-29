@@ -148,8 +148,13 @@ class ValyteDos:
         return self.densities.get(Spin.down, np.zeros_like(self.energies))
 
 
-def load_dos(vasprun, elements=None, **_):
-    """Load total and projected DOS from a vasprun.xml file."""
+def load_dos(vasprun, elements=None, efermi=None, **_):
+    """Load total and projected DOS from a vasprun.xml file.
+
+    The energy zero is the VBM for a gapped system and the Fermi level for a
+    metal.  Pass `efermi` to force a reference, which `combined` uses so that
+    its band and DOS panels share one zero.
+    """
     if os.path.isdir(vasprun):
         vasprun = os.path.join(vasprun, "vasprun.xml")
 
@@ -164,19 +169,32 @@ def load_dos(vasprun, elements=None, **_):
         parse_potcar_file=False,
     )
     dos = vr.complete_dos
-    efermi = dos.efermi
 
-    try:
-        bs = vr.get_band_structure()
-        if not bs.is_metal():
-            efermi = bs.get_vbm()["energy"]
-    except Exception:
+    if efermi is None:
+        efermi = dos.efermi
+        resolved = False
+
         try:
-            cbm, vbm = dos.get_cbm_vbm()
-            if cbm - vbm > 0.01:
-                efermi = vbm
+            bs = vr.get_band_structure()
+            if bs.is_metal():
+                resolved = True          # metal: the Fermi level is the zero
+            else:
+                efermi = bs.get_vbm()["energy"]
+                resolved = True
         except Exception:
-            pass
+            try:
+                cbm, vbm = dos.get_cbm_vbm()
+                if cbm - vbm > 0.01:
+                    efermi = vbm
+                    resolved = True
+                else:
+                    resolved = True      # no gap on the DOS grid: treat as metal
+            except Exception:
+                resolved = False
+
+        if not resolved:
+            print("Warning: could not determine the VBM; energies are "
+                  "referenced to the Fermi level from vasprun.xml.")
 
     energies = dos.energies - efermi
     pdos = get_pdos(dos, elements)

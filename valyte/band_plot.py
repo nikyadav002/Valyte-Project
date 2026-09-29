@@ -45,12 +45,14 @@ def _parse_orb_spec(spec):
     return spec.capitalize(), None
 
 
-def _get_orbital_weights(bs, spec, structure):
+def _get_orbital_weights(bs, spec, structure, spin=None):
     """Return summed orbital projection weights, shape (nkpts, nbands).
 
-    Uses Spin.up projections (first available spin).
+    `spin` selects the projection channel; it defaults to Spin.up, falling
+    back to whichever channel the calculation provides.
     """
-    spin = Spin.up if Spin.up in bs.projections else list(bs.projections.keys())[0]
+    if spin is None or spin not in bs.projections:
+        spin = Spin.up if Spin.up in bs.projections else list(bs.projections.keys())[0]
     proj = np.array(bs.projections[spin])
 
     # Detect the correct axis ordering.
@@ -426,15 +428,21 @@ def plot_orbital_band_structure(
         def get_energy(branch_i, band_i, spin_i):
             return energies[branch_i][spin_keys_e[spin_i]][band_i]
 
-    # Compute raw projection weights for each spec → (nkpts, nbands)
-    raw_weights = [_get_orbital_weights(bs, spec, structure) for spec in tricolor]
-    total = sum(raw_weights)
-    total = np.where(total < 1e-9, 1e-9, total)
-    norm_weights = [w / total for w in raw_weights]  # each (nkpts, nbands)
-
     fig, ax = plt.subplots(figsize=figsize)
 
     spins_proj = list(bs.projections.keys())
+
+    # Normalised projection weights per spin channel → norm_weights_by_spin[i]
+    # is a list of (nkpts, nbands) arrays, one per tricolor spec.  These must
+    # be computed separately for each channel; sharing one set across both
+    # colours the spin-down bands by the spin-up projections.
+    norm_weights_by_spin = []
+    for sp in spins_proj:
+        raw = [_get_orbital_weights(bs, spec, structure, spin=sp)
+               for spec in tricolor]
+        tot = sum(raw)
+        tot = np.where(tot < 1e-9, 1e-9, tot)
+        norm_weights_by_spin.append([w / tot for w in raw])
 
     for branch_i, branch in enumerate(bs.branches):
         kpt_start = branch["start_index"]
@@ -448,7 +456,7 @@ def plot_orbital_band_structure(
                 # RGB color at each k-point in this branch
                 nk = kpt_end - kpt_start
                 rgb = np.zeros((nk, 3))
-                for iw, nw in enumerate(norm_weights):
+                for iw, nw in enumerate(norm_weights_by_spin[spin_i]):
                     w_branch = nw[kpt_start:kpt_end, ib]
                     rgb += np.outer(w_branch, color_arr[iw])
                 rgb = np.clip(rgb, 0, 1)

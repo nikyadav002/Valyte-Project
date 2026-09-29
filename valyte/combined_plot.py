@@ -126,9 +126,17 @@ def plot_combined(
     band_energies = band_data["energy"]
     ticks = band_data["ticks"]
 
-    # Load DOS (it automatically zeroes relative to Fermi level)
+    # Both panels share a y-axis, so they must share one energy zero.
+    # BSPlotter(zero_to_efermi=True) uses the VBM for a gapped system and the
+    # Fermi level for a metal; hand that same value to the DOS loader instead
+    # of letting it resolve a reference of its own.
+    try:
+        zero_energy = bs.efermi if bs.is_metal() else bs.get_vbm()["energy"]
+    except Exception:
+        zero_energy = None
+
     dos_load_path = dos_path if dos_path else os.path.dirname(vasprun_path)
-    dos_data, pdos_data = load_dos(dos_load_path, elements)
+    dos_data, pdos_data = load_dos(dos_load_path, elements, efermi=zero_energy)
 
     # Resolve items to plot in DOS (orbital resolved by default)
     if not plotting_config:
@@ -344,7 +352,8 @@ def plot_combined(
     if save_data:
         # Save both band and DOS data
         # Band data
-        band_out = output.replace(".png", "_band.dat")
+        out_stem = os.path.splitext(output)[0]
+        band_out = out_stem + "_band.dat"
         nbranches = len(distances)
         all_d = np.concatenate(distances)
         if isinstance(band_energies, dict):
@@ -376,7 +385,7 @@ def plot_combined(
         np.savetxt(band_out, np.column_stack(cols), header=header, fmt="%.6f")
 
         # DOS data (only PDOS as specified)
-        dos_out = output.replace(".png", "_dos.dat")
+        dos_out = out_stem + "_dos.dat"
         dos_cols = [dos_data.energies]
         dos_labels = ["Energy(eV)"]
         for el, orb in plotting_config:
