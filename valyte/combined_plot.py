@@ -17,7 +17,7 @@ from pymatgen.electronic_structure.plotter import BSPlotter
 from pymatgen.electronic_structure.core import Spin
 
 from valyte.dos_plot import load_dos, resolve_color
-from valyte.style import apply_style, get_font_weight, save_plot
+from valyte.style import apply_style, get_font_weight, save_plot, font_scale
 
 
 def gradient_fill_rotated(y, x, ax=None, color=None, **kwargs):
@@ -101,6 +101,7 @@ def plot_combined(
     spin_resolved=False,
     bold=True,
     colors=None,
+    fontsize=None,
 ):
     """Plot combined Band Structure and DOS side-by-side."""
     if os.path.isdir(vasprun_path):
@@ -111,7 +112,9 @@ def plot_combined(
 
     # Font and styling
     _weight = get_font_weight(bold)
-    apply_style(font=font, bold=bold, fontsize=12)
+    _fsbase = fontsize if fontsize is not None else 12
+    _fscale = font_scale(fontsize, 12)
+    apply_style(font=font, bold=bold, fontsize=_fsbase)
 
     # Load Band Structure
     try:
@@ -195,7 +198,7 @@ def plot_combined(
     if spin_resolved:
         up_line = mlines.Line2D([], [], color="#3498db", lw=1.5, ls="-", label="Spin up")
         dn_line = mlines.Line2D([], [], color="#e74c3c", lw=1.5, ls="--", label="Spin down")
-        ax_band.legend(handles=[up_line, dn_line], fontsize=10, frameon=False, loc="upper left")
+        ax_band.legend(handles=[up_line, dn_line], fontsize=10 * _fscale, frameon=False, loc="upper left")
 
     # Set band structure axes
     ax_band.set_xticks(ticks["distance"])
@@ -208,7 +211,7 @@ def plot_combined(
              .replace("\\Lambda", "\\mathbf{\\Lambda}")
             for l in clean_labels
         ]
-    ax_band.set_xticklabels(clean_labels, fontsize=12, fontweight=_weight)
+    ax_band.set_xticklabels(clean_labels, fontsize=12 * _fscale, fontweight=_weight)
 
     for d in ticks["distance"]:
         ax_band.axvline(d, color="k", lw=0.8, ls="-", alpha=0.3)
@@ -216,7 +219,7 @@ def plot_combined(
     if show_fermi:
         ax_band.axhline(0, color="k", lw=0.8, ls="--", alpha=0.7)
 
-    ax_band.set_ylabel("Energy (eV)", fontsize=14, weight=_weight, labelpad=6)
+    ax_band.set_ylabel("Energy (eV)", fontsize=14 * _fscale, weight=_weight, labelpad=6)
     ax_band.set_ylim(ylim)
     ax_band.set_xlim(distances[0][0], distances[-1][-1])
 
@@ -327,7 +330,7 @@ def plot_combined(
             legend_handles,
             legend_labels,
             frameon=False,
-            fontsize=8.0,
+            fontsize=8.0 * _fscale,
             loc="upper right",
             ncol=1,
             handlelength=1.0,

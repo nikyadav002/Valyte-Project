@@ -3,11 +3,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from valyte.style import apply_style, get_font_weight, save_plot
+from valyte.style import apply_style, get_font_weight, save_plot, font_scale
 
 
 def plot_effective_mass(results, output="valyte_effmass.png",
-                        figsize=(8, 4), dpi=400, font="Arial", bold=True):
+                        figsize=(8, 4), dpi=400, font="Arial", bold=True,
+    fontsize=None,
+):
     """Plot parabolic fits overlaid on band data near VBM and CBM.
 
     Parameters
@@ -37,7 +39,9 @@ def plot_effective_mass(results, output="valyte_effmass.png",
         return
 
     _weight = get_font_weight(bold)
-    apply_style(font=font, bold=bold, fontsize=14, linewidth=1.4 if bold else 0.8)
+    _fsbase = fontsize if fontsize is not None else 14
+    _fscale = font_scale(fontsize, 14)
+    apply_style(font=font, bold=bold, fontsize=_fsbase, linewidth=1.4 if bold else 0.8)
 
     has_holes = len(hole_masses) > 0
     has_electrons = len(electron_masses) > 0
@@ -62,17 +66,18 @@ def plot_effective_mass(results, output="valyte_effmass.png",
     # ── VBM panel ────────────────────────────────────────────────────
     if ax_vbm is not None and hole_masses:
         _plot_panel(ax_vbm, hole_masses, color_vbm, linestyles, markers,
-                    "Hole (VBM)", _weight)
+                    "Hole (VBM)", _weight, fscale=_fscale)
 
     # ── CBM panel ────────────────────────────────────────────────────
     if ax_cbm is not None and electron_masses:
         _plot_panel(ax_cbm, electron_masses, color_cbm, linestyles, markers,
-                    "Electron (CBM)", _weight)
+                    "Electron (CBM)", _weight, fscale=_fscale)
 
     save_plot(fig, output, dpi=dpi)
 
 
-def _plot_panel(ax, masses, base_color, linestyles, markers, title, _weight="bold"):
+def _plot_panel(ax, masses, base_color, linestyles, markers, title,
+                _weight="bold", fscale=1.0):
     """Plot a single panel (VBM or CBM) with fit curves."""
     # Slightly vary the color for different directions
     from matplotlib.colors import to_rgb
@@ -117,7 +122,7 @@ def _plot_panel(ax, masses, base_color, linestyles, markers, title, _weight="bol
         ax.annotate(
             ann_text,
             xy=(x_ann, y_ann),
-            fontsize=9,
+            fontsize=9 * fscale,
             fontweight=_weight,
             color=color_hex,
             xytext=(5, 8 + 12 * i),
@@ -126,13 +131,13 @@ def _plot_panel(ax, masses, base_color, linestyles, markers, title, _weight="bol
                       edgecolor=color_hex, alpha=0.85, linewidth=0.8),
         )
 
-    ax.set_xlabel("k (1/Å)", fontsize=14, fontweight=_weight, labelpad=6)
-    ax.set_ylabel("Energy (eV)", fontsize=14, fontweight=_weight, labelpad=6)
-    ax.set_title(title, fontsize=13, fontweight=_weight, pad=8)
+    ax.set_xlabel("k (1/Å)", fontsize=14 * fscale, fontweight=_weight, labelpad=6)
+    ax.set_ylabel("Energy (eV)", fontsize=14 * fscale, fontweight=_weight, labelpad=6)
+    ax.set_title(title, fontsize=13 * fscale, fontweight=_weight, pad=8)
 
     ax.axhline(0, color="k", lw=0.6, ls="--", alpha=0.4)
     ax.axvline(0, color="k", lw=0.6, ls="--", alpha=0.4)
 
     if len(masses) > 1:
-        ax.legend(fontsize=9, frameon=True, loc="best", framealpha=0.9,
+        ax.legend(fontsize=9 * fscale, frameon=True, loc="best", framealpha=0.9,
                   edgecolor="0.8")

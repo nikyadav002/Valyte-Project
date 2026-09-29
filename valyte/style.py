@@ -31,6 +31,20 @@ def get_font_weight(bold: bool = True) -> str:
     return "bold" if bold else "normal"
 
 
+def font_scale(fontsize, reference):
+    """Factor mapping a module's reference design size onto `fontsize`.
+
+    Each plotting module was laid out against a base font size, with the
+    individual label, tick and legend sizes chosen relative to it.  Scaling
+    every one of those by this factor keeps the proportions intact when the
+    user asks for a different base.  Returns 1.0 when no size is requested,
+    so the default output is unchanged.
+    """
+    if fontsize is None or not reference:
+        return 1.0
+    return float(fontsize) / float(reference)
+
+
 def apply_style(
     font: str = "Arial",
     bold: bool = True,

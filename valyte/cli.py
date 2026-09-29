@@ -145,6 +145,7 @@ def main():
                             help="Grouping mode for panels: 'element' (default) or 'orbital'")
     dos_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
     dos_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
+    dos_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
     dos_parser.add_argument("--colors-file", help="Path to JSON or text file mapping elements/orbitals to colors")
     dos_parser.add_argument("-c", "--colors", nargs="+", help="Custom colors mapping or list (e.g., 'Fe(d)=red O(p)=blue' or 'red blue')")
 
@@ -202,6 +203,7 @@ def main():
     )
     band_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
     band_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
+    band_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
 
     # Band KPOINTS generation
     kpt_gen_parser = band_subparsers.add_parser("kpt-gen", help="Generate KPOINTS for band structure")
@@ -253,6 +255,7 @@ def main():
     effmass_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
     effmass_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
     effmass_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
+    effmass_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
 
     # Bandgap
     bandgap_parser = subparsers.add_parser("bandgap", help="Print electronic bandgap")
@@ -278,6 +281,7 @@ def main():
     combined_parser.add_argument("--spin-resolved", action="store_true", help="Plot spin-up/spin-down channels in distinct colors")
     combined_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
     combined_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
+    combined_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
     combined_parser.add_argument("--colors-file", help="Path to JSON or text file mapping elements/orbitals to colors")
     combined_parser.add_argument("-c", "--colors", nargs="+", help="Custom colors mapping or list (e.g., 'Fe(d)=red O(p)=blue' or 'red blue')")
 
@@ -315,6 +319,8 @@ def main():
                     bold=not args.no_bold,
                     dpi=args.dpi,
                     colors=colors_map,
+                
+                    fontsize=args.fontsize,
                 )
             else:
                 plot_dos(
@@ -334,6 +340,8 @@ def main():
                     bold=not args.no_bold,
                     dpi=args.dpi,
                     colors=colors_map,
+                
+                    fontsize=args.fontsize,
                 )
         except Exception as e:
             print(f"Error: {e}")
@@ -413,7 +421,8 @@ def main():
             print_results(results)
 
             if args.plot:
-                plot_effective_mass(results, output=_apply_format(args.output, args.format), dpi=args.dpi, bold=not args.no_bold)
+                plot_effective_mass(results, output=_apply_format(args.output, args.format), dpi=args.dpi,
+                                    bold=not args.no_bold, fontsize=args.fontsize)
 
             if args.save_data:
                 save_results_dat(results)
@@ -478,6 +487,8 @@ def main():
                 bold=not args.no_bold,
                 dpi=args.dpi,
                 colors=colors_map,
+            
+                fontsize=args.fontsize,
             )
 
         except Exception:
@@ -526,6 +537,8 @@ def main():
                         cmap=args.spin_cmap,
                         bold=not args.no_bold,
                         dpi=args.dpi,
+                    
+                        fontsize=args.fontsize,
                     )
                 elif args.tricolor:
                     tri_labels = args.tri_labels if args.tri_labels else list(args.tricolor)
@@ -544,6 +557,8 @@ def main():
                         save_data=args.save_data,
                         bold=not args.no_bold,
                         dpi=args.dpi,
+                    
+                        fontsize=args.fontsize,
                     )
                 else:
                     plot_band_structure(
@@ -557,6 +572,8 @@ def main():
                         spin_resolved=args.spin_resolved,
                         bold=not args.no_bold,
                         dpi=args.dpi,
+                    
+                        fontsize=args.fontsize,
                     )
             except Exception:
                 import traceback

@@ -14,7 +14,7 @@ from pymatgen.io.vasp import Vasprun
 from pymatgen.electronic_structure.core import Spin
 import re
 
-from valyte.style import apply_style, get_font_weight, DEFAULT_PALETTE
+from valyte.style import apply_style, get_font_weight, DEFAULT_PALETTE, font_scale
 
 
 def load_color_file(filepath):
@@ -297,11 +297,14 @@ def plot_dos(
     save_data=False,
     bold=True,
     colors=None,
+    fontsize=None,
 ):
     """Plot total and projected DOS with the Valyte style."""
 
     _weight = get_font_weight(bold)
-    apply_style(font=font, bold=bold, fontsize=12)
+    _fsbase = fontsize if fontsize is not None else 12
+    _fscale = font_scale(fontsize, 12)
+    apply_style(font=font, bold=bold, fontsize=_fsbase)
     fig, ax = plt.subplots(figsize=figsize)
 
     is_spin_polarized = Spin.down in dos.densities
@@ -461,8 +464,8 @@ def plot_dos(
         ax.set_ylim(*ylim)
 
     ax.set_xlim(*xlim)
-    ax.set_xlabel("Energy (eV)", fontsize=14, weight=_weight, labelpad=6)
-    ax.set_ylabel("Density of States", fontsize=14, weight=_weight, labelpad=6)
+    ax.set_xlabel("Energy (eV)", fontsize=14 * _fscale, weight=_weight, labelpad=6)
+    ax.set_ylabel("Density of States", fontsize=14 * _fscale, weight=_weight, labelpad=6)
 
     xticks = np.arange(np.ceil(xlim[0]), np.floor(xlim[1]) + 1, 1)
     ax.set_xticks(xticks)
@@ -477,7 +480,7 @@ def plot_dos(
             lines,
             labels,
             frameon=False,
-            fontsize=13,
+            fontsize=13 * _fscale,
             loc="upper right" if legend_loc == "auto" else legend_loc,
             ncol=1,
             handlelength=1.5,
@@ -513,6 +516,7 @@ def plot_dos_panels(
     group_by="element",
     bold=True,
     colors=None,
+    fontsize=None,
 ):
     """Plot DOS as vertically stacked panels — one per element (or per orbital).
 
@@ -525,7 +529,9 @@ def plot_dos_panels(
     """
 
     _weight = get_font_weight(bold)
-    apply_style(font=font, bold=bold, fontsize=11)
+    _fsbase = fontsize if fontsize is not None else 11
+    _fscale = font_scale(fontsize, 11)
+    apply_style(font=font, bold=bold, fontsize=_fsbase)
     palette = DEFAULT_PALETTE
 
     is_spin_polarized = Spin.down in dos.densities
@@ -692,7 +698,7 @@ def plot_dos_panels(
         ax.text(
             0.02, 0.88, panel_label,
             transform=ax.transAxes,
-            fontsize=13, fontweight=_weight,
+            fontsize=13 * _fscale, fontweight=_weight,
             va="top", ha="left",
             bbox=dict(
                 facecolor="white", edgecolor="none",
@@ -704,7 +710,7 @@ def plot_dos_panels(
         if len(legend_lines) > 1:
             leg = ax.legend(
                 legend_lines, legend_labels,
-                frameon=False, fontsize=10,
+                frameon=False, fontsize=10 * _fscale,
                 loc="upper right",
                 ncol=1,
                 handlelength=1.2,
@@ -732,13 +738,13 @@ def plot_dos_panels(
     bottom_ax.set_xticks(xticks)
     tick_labels = [f"{int(x)}" if x == int(x) else f"{x}" for x in xticks]
     bottom_ax.set_xticklabels(tick_labels, fontweight=_weight)
-    bottom_ax.set_xlabel("Energy (eV)", fontsize=14, weight=_weight, labelpad=6)
+    bottom_ax.set_xlabel("Energy (eV)", fontsize=14 * _fscale, weight=_weight, labelpad=6)
 
     # Shared Y-label in the centre
     fig.text(
         0.01, 0.5, "Density of States",
         va="center", ha="left", rotation="vertical",
-        fontsize=14, fontweight=_weight,
+        fontsize=14 * _fscale, fontweight=_weight,
     )
 
     fig.subplots_adjust(left=0.10, right=0.97, top=0.97, bottom=0.08)
