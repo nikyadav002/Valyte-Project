@@ -31,6 +31,24 @@ def get_font_weight(bold: bool = True) -> str:
     return "bold" if bold else "normal"
 
 
+def energy_ticks(lo, hi, max_ticks=9):
+    """Pick readable tick positions for an energy axis spanning [lo, hi].
+
+    Wide spans keep the 1 eV integer steps the plots were designed around, so
+    the default ranges are unchanged.  Narrow spans fall back to a locator that
+    chooses a finer step, instead of collapsing to a single tick at zero.
+    """
+    import numpy as np
+    from matplotlib.ticker import MaxNLocator
+
+    ticks = np.arange(np.ceil(lo), np.floor(hi) + 1, 1)
+    if len(ticks) >= 3:
+        return ticks
+
+    ticks = MaxNLocator(nbins=max_ticks - 1, steps=[1, 2, 2.5, 5, 10]).tick_values(lo, hi)
+    return np.asarray([t for t in ticks if lo - 1e-9 <= t <= hi + 1e-9])
+
+
 def font_scale(fontsize, reference):
     """Factor mapping a module's reference design size onto `fontsize`.
 

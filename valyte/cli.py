@@ -509,7 +509,7 @@ def main():
             except Exception as e:
                 print(f"Error: {e}")
                 sys.exit(1)
-        elif args.band_command == "plot" or args.band_command is None:
+        else:
             try:
                 target_path = args.vasprun or "."
                 if os.path.isdir(target_path):
@@ -580,8 +580,6 @@ def main():
 
                 traceback.print_exc()
                 sys.exit(1)
-        else:
-            band_parser.print_help()
     else:
         parser.print_help()
 

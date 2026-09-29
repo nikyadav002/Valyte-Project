@@ -14,7 +14,7 @@ from pymatgen.io.vasp import BSVasprun
 from pymatgen.electronic_structure.plotter import BSPlotter
 from pymatgen.electronic_structure.core import Spin
 
-from valyte.style import apply_style, get_font_weight, save_plot, font_scale
+from valyte.style import apply_style, get_font_weight, save_plot, font_scale, energy_ticks
 
 # Orbital index mapping in pymatgen PROCAR order:
 # 0:s  1:py  2:pz  3:px  4:dxy  5:dyz  6:dz2  7:dxz  8:x2-y2  9-15:f
@@ -337,7 +337,7 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
     ax.set_ylabel("Energy (eV)", fontsize=16 * _fscale, fontweight=_weight, labelpad=8)
     if ylim:
         ax.set_ylim(ylim)
-        yticks = np.arange(np.ceil(ylim[0]), np.floor(ylim[1]) + 1, 1)
+        yticks = energy_ticks(ylim[0], ylim[1])
         ax.set_yticks(yticks)
     else:
         ax.set_ylim(-4, 4)
@@ -498,7 +498,7 @@ def plot_orbital_band_structure(
     ax.set_ylabel("Energy (eV)", fontsize=16 * _fscale, fontweight=_weight, labelpad=8)
     if ylim:
         ax.set_ylim(ylim)
-        ax.set_yticks(np.arange(np.ceil(ylim[0]), np.floor(ylim[1]) + 1, 1))
+        ax.set_yticks(energy_ticks(ylim[0], ylim[1]))
     else:
         ax.set_ylim(-4, 4)
         ax.set_yticks(np.arange(-4, 5, 1))
@@ -651,7 +651,7 @@ def plot_spin_texture_band_structure(
     ax.set_ylabel("Energy (eV)", fontsize=16 * _fscale, fontweight=_weight, labelpad=8)
     if ylim:
         ax.set_ylim(ylim)
-        ax.set_yticks(np.arange(np.ceil(ylim[0]), np.floor(ylim[1]) + 1, 1))
+        ax.set_yticks(energy_ticks(ylim[0], ylim[1]))
     else:
         ax.set_ylim(-4, 4)
         ax.set_yticks(np.arange(-4, 5, 1))

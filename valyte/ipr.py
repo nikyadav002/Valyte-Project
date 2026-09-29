@@ -5,91 +5,148 @@ import re
 import numpy as np
 
 
-def read_procar(filename="PROCAR"):
-    """Read PROCAR and extract per-atom total projections.
+def read_procar_header(filename="PROCAR"):
+    """Read just the PROCAR header: (nkpts, nbands, natoms, nspin).
 
-    Returns (proj, energies, weights, nkpts, nbands, natoms, nspin) where
-    proj[spin][ik][ib] is a list of natoms per-atom weights and
-    energies[spin][ik][ib] is the eigenvalue in eV.
-
-    Handles ISPIN=2 (the k-point blocks repeat for the second channel) and
-    non-collinear runs, where each band carries four ion blocks (charge,
-    mx, my, mz) of which only the first is the charge density.
+    Stops as soon as the counts are known, so it is cheap on a multi-GB file.
+    `nspin` counts how many times the header repeats, which is 2 for ISPIN=2.
     """
     if not os.path.exists(filename):
         raise FileNotFoundError(f"{filename} not found")
 
-    with open(filename, "r") as f:
-        lines = f.readlines()
+    first = None
+    nspin = 0
+    with _open_procar(filename) as fh:
+        for line in fh:
+            if "k-points" in line and "bands" in line:
+                nspin += 1
+                if first is None:
+                    nums = [int(x) for x in re.findall(r"\d+", line)]
+                    if len(nums) < 3:
+                        raise ValueError(
+                            "PROCAR header does not contain k-points, bands, and ions")
+                    first = nums[:3]
+            elif first is not None and nspin >= 2:
+                break
 
-    headers = [l for l in lines if "k-points" in l and "bands" in l]
-    if not headers:
+    if first is None:
         raise ValueError("Could not find PROCAR header with k-points/bands/ions")
 
-    numbers = [int(x) for x in re.findall(r"\d+", headers[0])]
-    if len(numbers) < 3:
-        raise ValueError("PROCAR header does not contain k-points, bands, and ions")
+    nkpts, nbands, natoms = first
+    return nkpts, nbands, natoms, min(max(nspin, 1), 2)
 
-    nkpts, nbands, natoms = numbers[0], numbers[1], numbers[2]
-    nspin = max(1, len(headers))
+
+def _open_procar(filename):
+    if filename.endswith(".gz"):
+        import gzip
+        return gzip.open(filename, "rt", errors="replace")
+    return open(filename, "r", errors="replace")
+
+
+def read_procar(filename="PROCAR", wanted_bands=None):
+    """Stream a PROCAR and extract per-atom charge projections.
+
+    Returns (proj, energies, weights, nkpts, nbands, natoms, nspin) where
+    proj[spin][ik][ib] is a list of natoms per-atom weights (empty for bands
+    that were not requested) and energies[spin][ik][ib] is the eigenvalue.
+
+    `wanted_bands` is a set of 0-indexed band numbers; anything else is skipped
+    without being stored, which keeps memory flat on large files.
+
+    Handles ISPIN=2, where the whole set of k-point blocks repeats, and
+    non-collinear runs, where each band carries four ion blocks (charge, then
+    mx/my/mz) of which only the first is the charge density.
+    """
+    nkpts, nbands, natoms, nspin = read_procar_header(filename)
 
     proj = [[[[] for _ in range(nbands)] for _ in range(nkpts)]
             for _ in range(nspin)]
     energies = [[[0.0 for _ in range(nbands)] for _ in range(nkpts)]
                 for _ in range(nspin)]
-    weights = [1.0] * nkpts
+    weights = [None] * nkpts
 
     re_weight = re.compile(r"weight\s*=\s*([-+0-9.eEdD]+)")
 
     kcount = -1
-    isp = 0
-    ik = -1
-    ib = -1
+    isp = ik = ib = -1
+    in_charge_block = False      # only the first ion block per band is charge
+    overrun = bad_rows = bad_energies = 0
 
-    for raw in lines:
-        line = raw.strip()
-        if not line:
-            continue
+    with _open_procar(filename) as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line:
+                continue
 
-        if line.startswith("k-point"):
-            kcount += 1
-            isp = min(kcount // nkpts, nspin - 1)
-            ik = kcount % nkpts
-            ib = -1
-            m = re_weight.search(line)
-            if m and isp == 0:
-                try:
-                    weights[ik] = float(m.group(1).replace("D", "e"))
-                except ValueError:
-                    pass
-            continue
+            if line.startswith("k-point"):
+                kcount += 1
+                if kcount >= nspin * nkpts:
+                    overrun += 1
+                    isp = ik = -1          # refuse to wrap onto earlier data
+                    continue
+                isp, ik = divmod(kcount, nkpts)
+                ib = -1
+                in_charge_block = False
+                m = re_weight.search(line)
+                if m and isp == 0:
+                    try:
+                        weights[ik] = float(m.group(1).replace("D", "e").replace("d", "e"))
+                    except ValueError:
+                        pass
+                continue
 
-        if line.startswith("band"):
-            ib += 1
-            parts = line.split()
-            if len(parts) > 4 and 0 <= ib < nbands and ik >= 0:
-                try:
-                    energies[isp][ik][ib] = float(parts[4])
-                except ValueError:
-                    pass
-            continue
+            if ik < 0:
+                continue                    # inside an overrun block
 
-        if line[0].isdigit() and ik >= 0 and 0 <= ib < nbands:
-            bucket = proj[isp][ik][ib]
-            # Keep only the first natoms ion rows: later blocks are the
-            # magnetisation components (non-collinear) or phase factors.
-            if len(bucket) < natoms:
+            if line.startswith("band"):
+                ib += 1
+                in_charge_block = True
+                parts = line.split()
+                if len(parts) > 4 and 0 <= ib < nbands:
+                    try:
+                        energies[isp][ik][ib] = float(parts[4])
+                    except ValueError:
+                        bad_energies += 1
+                continue
+
+            # A "tot" line closes the charge block; later blocks are mx/my/mz
+            # or phase factors and must not be mixed into the charge weights.
+            if line.startswith("tot"):
+                in_charge_block = False
+                continue
+
+            if (in_charge_block and line[0].isdigit()
+                    and 0 <= ib < nbands
+                    and (wanted_bands is None or ib in wanted_bands)):
                 parts = line.split()
                 try:
-                    bucket.append(float(parts[-1]))
+                    proj[isp][ik][ib].append(float(parts[-1]))
                 except (ValueError, IndexError):
-                    pass
+                    bad_rows += 1
 
-    total_w = sum(weights)
-    if total_w > 0:
-        weights = [w / total_w for w in weights]
-    else:
+    if overrun:
+        print(f"Warning: PROCAR holds {overrun} more k-point block(s) than the "
+              f"header declares ({nspin} x {nkpts}); the extra blocks were ignored.")
+    if bad_rows:
+        print(f"Warning: {bad_rows} ion row(s) could not be parsed and were skipped.")
+    if bad_energies:
+        print(f"Warning: {bad_energies} band energ(ies) could not be parsed "
+              f"and are reported as 0.0 eV.")
+
+    parsed = [w for w in weights if w is not None]
+    if not parsed or any(w == 0 for w in parsed):
+        # No weights, or a hybrid run where the band-structure k-points carry
+        # weight 0.  Weighting there would silently drop exactly the k-points
+        # of interest, so fall back to a plain mean.
+        if parsed and any(w == 0 for w in parsed):
+            print("Note: PROCAR contains zero-weight k-points; using an "
+                  "unweighted average over k-points.")
         weights = [1.0 / nkpts] * nkpts
+    else:
+        mean_w = sum(parsed) / len(parsed)
+        weights = [mean_w if w is None else w for w in weights]
+        total = sum(weights)
+        weights = [w / total for w in weights]
 
     return proj, energies, weights, nkpts, nbands, natoms, nspin
 
@@ -224,6 +281,15 @@ def _parse_band_indices(text):
     return indices
 
 
+def _print_procar_info(nkpts, nbands, natoms, nspin):
+    print("PROCAR info")
+    print(f"  k-points : {nkpts}")
+    print(f"  bands    : {nbands}")
+    print(f"  atoms    : {natoms}")
+    if nspin == 2:
+        print("  spin     : collinear (2 channels)")
+
+
 def _filter_band_indices(band_indices, nbands):
     """Keep valid 1-indexed band numbers and warn about skipped values."""
     filtered = [b for b in band_indices if 1 <= b <= nbands]
@@ -243,14 +309,8 @@ def run_ipr(
     show_details=False,
 ):
     """Run IPR analysis without prompting."""
-    proj, energies, weights, nkpts, nbands, natoms, nspin = read_procar(procar_file)
-
-    print("PROCAR info")
-    print(f"  k-points : {nkpts}")
-    print(f"  bands    : {nbands}")
-    print(f"  atoms    : {natoms}")
-    if nspin == 2:
-        print(f"  spin     : collinear (2 channels)")
+    nkpts, nbands, natoms, nspin = read_procar_header(procar_file)
+    _print_procar_info(nkpts, nbands, natoms, nspin)
 
     if not band_text:
         raise ValueError("No band indices provided.")
@@ -260,6 +320,8 @@ def run_ipr(
         raise ValueError("No valid band indices found.")
 
     filtered = _filter_band_indices(band_indices, nbands)
+    proj, energies, weights, nkpts, nbands, natoms, nspin = read_procar(
+        procar_file, wanted_bands={b - 1 for b in filtered})
     results = analyze_bands(proj, energies, weights, nkpts, filtered,
                             nspin=nspin, verbose=show_details)
     if not show_details:
@@ -271,17 +333,12 @@ def run_ipr(
 def run_ipr_interactive(procar_file="PROCAR", output="ipr_procar.dat"):
     """Interactive IPR workflow."""
     try:
-        proj, energies, weights, nkpts, nbands, natoms, nspin = read_procar(procar_file)
+        nkpts, nbands, natoms, nspin = read_procar_header(procar_file)
     except Exception as e:
         print(f"Error: {e}")
         return
 
-    print("PROCAR info")
-    print(f"  k-points : {nkpts}")
-    print(f"  bands    : {nbands}")
-    print(f"  atoms    : {natoms}")
-    if nspin == 2:
-        print(f"  spin     : collinear (2 channels)")
+    _print_procar_info(nkpts, nbands, natoms, nspin)
 
     band_text = input("Band indices (e.g., 5 6 7 or 5-7): ").strip()
     if not band_text:
@@ -296,8 +353,10 @@ def run_ipr_interactive(procar_file="PROCAR", output="ipr_procar.dat"):
             raise ValueError("No valid band indices found.")
 
         filtered = _filter_band_indices(band_indices, nbands)
+        proj, energies, weights, nkpts, nbands, natoms, nspin = read_procar(
+            procar_file, wanted_bands={b - 1 for b in filtered})
         results = analyze_bands(proj, energies, weights, nkpts, filtered,
-                            nspin=nspin, verbose=show_details)
+                                nspin=nspin, verbose=show_details)
         if not show_details:
             print_summary(results)
         save_results(results, output)

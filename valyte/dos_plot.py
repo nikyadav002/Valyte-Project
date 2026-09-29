@@ -14,7 +14,7 @@ from pymatgen.io.vasp import Vasprun
 from pymatgen.electronic_structure.core import Spin
 import re
 
-from valyte.style import apply_style, get_font_weight, DEFAULT_PALETTE, font_scale
+from valyte.style import apply_style, get_font_weight, DEFAULT_PALETTE, font_scale, energy_ticks
 
 
 def load_color_file(filepath):
@@ -148,26 +148,27 @@ class ValyteDos:
         return self.densities.get(Spin.down, np.zeros_like(self.energies))
 
 
-def load_dos(vasprun, elements=None, efermi=None, **_):
+def load_dos(vasprun, elements=None, efermi=None, vr=None, **_):
     """Load total and projected DOS from a vasprun.xml file.
 
     The energy zero is the VBM for a gapped system and the Fermi level for a
     metal.  Pass `efermi` to force a reference, which `combined` uses so that
     its band and DOS panels share one zero.
     """
-    if os.path.isdir(vasprun):
-        vasprun = os.path.join(vasprun, "vasprun.xml")
+    if vr is None:
+        if os.path.isdir(vasprun):
+            vasprun = os.path.join(vasprun, "vasprun.xml")
 
-    if not os.path.exists(vasprun):
-        raise FileNotFoundError(f"{vasprun} not found")
+        if not os.path.exists(vasprun):
+            raise FileNotFoundError(f"{vasprun} not found")
 
-    vr = Vasprun(
-        vasprun,
-        parse_dos=True,
-        parse_eigen=True,
-        parse_projected_eigen=False,
-        parse_potcar_file=False,
-    )
+        vr = Vasprun(
+            vasprun,
+            parse_dos=True,
+            parse_eigen=True,
+            parse_projected_eigen=False,
+            parse_potcar_file=False,
+        )
     dos = vr.complete_dos
 
     if efermi is None:
@@ -467,7 +468,7 @@ def plot_dos(
     ax.set_xlabel("Energy (eV)", fontsize=14 * _fscale, weight=_weight, labelpad=6)
     ax.set_ylabel("Density of States", fontsize=14 * _fscale, weight=_weight, labelpad=6)
 
-    xticks = np.arange(np.ceil(xlim[0]), np.floor(xlim[1]) + 1, 1)
+    xticks = energy_ticks(xlim[0], xlim[1])
     ax.set_xticks(xticks)
     tick_labels = [f"{int(x)}" if x == int(x) else f"{x}" for x in xticks]
     ax.set_xticklabels(tick_labels, fontweight=_weight)
@@ -734,7 +735,7 @@ def plot_dos_panels(
 
     # Bottom panel: energy axis label and ticks
     bottom_ax = axes[-1]
-    xticks = np.arange(np.ceil(xlim[0]), np.floor(xlim[1]) + 1, 1)
+    xticks = energy_ticks(xlim[0], xlim[1])
     bottom_ax.set_xticks(xticks)
     tick_labels = [f"{int(x)}" if x == int(x) else f"{x}" for x in xticks]
     bottom_ax.set_xticklabels(tick_labels, fontweight=_weight)

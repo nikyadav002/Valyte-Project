@@ -12,7 +12,7 @@ import matplotlib.lines as mlines
 from matplotlib.patches import Polygon
 from matplotlib.ticker import AutoMinorLocator
 
-from pymatgen.io.vasp import BSVasprun
+from pymatgen.io.vasp import BSVasprun, Vasprun
 from pymatgen.electronic_structure.plotter import BSPlotter
 from pymatgen.electronic_structure.core import Spin
 
@@ -116,9 +116,21 @@ def plot_combined(
     _fscale = font_scale(fontsize, 12)
     apply_style(font=font, bold=bold, fontsize=_fsbase)
 
-    # Load Band Structure
+    # When the DOS comes from the same vasprun.xml (the default), parse the
+    # file once and serve both panels from it.  A separate --dos source still
+    # needs its own parse, so the lighter BSVasprun is enough for the bands.
+    dos_same_source = dos_path is None
     try:
-        vr = BSVasprun(vasprun_path, parse_projected_eigen=False)
+        if dos_same_source:
+            vr = Vasprun(
+                vasprun_path,
+                parse_dos=True,
+                parse_eigen=True,
+                parse_projected_eigen=False,
+                parse_potcar_file=False,
+            )
+        else:
+            vr = BSVasprun(vasprun_path, parse_projected_eigen=False)
         bs = vr.get_band_structure(kpoints_filename=kpoints_path, line_mode=True)
     except Exception as e:
         raise ValueError(f"Failed to load band structure: {e}")
@@ -138,8 +150,11 @@ def plot_combined(
     except Exception:
         zero_energy = None
 
-    dos_load_path = dos_path if dos_path else os.path.dirname(vasprun_path)
-    dos_data, pdos_data = load_dos(dos_load_path, elements, efermi=zero_energy)
+    if dos_same_source:
+        dos_data, pdos_data = load_dos(vasprun_path, elements,
+                                       efermi=zero_energy, vr=vr)
+    else:
+        dos_data, pdos_data = load_dos(dos_path, elements, efermi=zero_energy)
 
     # Resolve items to plot in DOS (orbital resolved by default)
     if not plotting_config:

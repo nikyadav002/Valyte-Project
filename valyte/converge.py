@@ -81,23 +81,68 @@ _RE_NSW    = re.compile(r"NSW\s*=\s*(\d+)")
 _RE_EDIFF  = re.compile(r"EDIFF\s*=\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)")
 _RE_EDIFFG = re.compile(r"EDIFFG\s*=\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)")
 _RE_NIONS  = re.compile(r"NIONS\s*=\s*(\d+)")
-_RE_WTIME  = re.compile(r"Total CPU time used \(sec\):\s*([\d.]+)")
-_RE_WTIME2 = re.compile(r"Elapsed time \(sec\):\s*([\d.]+)")
 
 
-def parse_outcar_header(path):
-    """Read only the INCAR-echo section of OUTCAR to get job parameters.
+def parse_outcar(path):
+    """Single pass over OUTCAR for both the job parameters and the per-step data.
 
-    Returns dict: ibrion, nsw, ediff, ediffg, nions, walltime_s.
+    Returns (info, steps) where info holds ibrion, nsw, ediff, ediffg, nions and
+    steps is a list of {max_force, pressure}, one per ionic step.  The header
+    fields appear near the top and the force blocks throughout, so reading both
+    together avoids traversing (and decompressing) the file twice.
     """
     info = {"ibrion": None, "nsw": None, "ediff": None,
-            "ediffg": None, "nions": None, "walltime_s": None}
-    found_header = False
+            "ediffg": None, "nions": None}
+
+    re_force_hdr = re.compile(r"TOTAL-FORCE \(eV/Angst\)")
+    re_pressure = re.compile(
+        r"external pressure\s*=\s*([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*kB"
+    )
+    re_sep = re.compile(r"^-{10,}")
+
+    header_done = False
+    steps = []
+    in_block = False
+    skip_sep = False
+    buf = []
+    pending_p = None
 
     with _open(path) as fh:
         for line in fh:
-            if "INCAR" in line and "input" in line.lower():
-                found_header = True
+            # ── per-step forces and pressure ──────────────────────────────
+            if re_force_hdr.search(line):
+                in_block = True
+                skip_sep = True
+                buf = []
+                continue
+
+            if in_block:
+                if skip_sep:
+                    skip_sep = False
+                    continue
+                if re_sep.match(line.strip()):
+                    in_block = False
+                    steps.append({"max_force": max(buf) if buf else None,
+                                  "pressure": pending_p})
+                    pending_p = None
+                    continue
+                parts = line.split()
+                if len(parts) >= 6:
+                    try:
+                        fx, fy, fz = float(parts[3]), float(parts[4]), float(parts[5])
+                        buf.append((fx * fx + fy * fy + fz * fz) ** 0.5)
+                    except ValueError:
+                        pass
+                continue
+
+            m = re_pressure.search(line)
+            if m:
+                pending_p = float(m.group(1))
+                continue
+
+            # ── INCAR echo, only until every field is found ───────────────
+            if header_done:
+                continue
 
             if info["ibrion"] is None:
                 m = _RE_IBRION.search(line)
@@ -124,71 +169,11 @@ def parse_outcar_header(path):
                 if m:
                     info["nions"] = int(m.group(1))
 
-            m = _RE_WTIME.search(line)
-            if m:
-                info["walltime_s"] = float(m.group(1))
+            if all(info[k] is not None
+                   for k in ("ibrion", "nsw", "ediff", "ediffg", "nions")):
+                header_done = True
 
-            if info["walltime_s"] is None:
-                m = _RE_WTIME2.search(line)
-                if m:
-                    info["walltime_s"] = float(m.group(1))
-
-            if (found_header and all(info[k] is not None
-                    for k in ("ibrion", "nsw", "ediff", "nions"))):
-                break
-
-    return info
-
-
-def parse_outcar_forces(path):
-    """Single-pass OUTCAR parse for per-ionic-step max force and pressure.
-
-    Returns list of {max_force, pressure}, one per ionic step.
-    """
-    re_force_hdr = re.compile(r"TOTAL-FORCE \(eV/Angst\)")
-    re_pressure  = re.compile(
-        r"external pressure\s*=\s*([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*kB"
-    )
-    re_sep = re.compile(r"^-{10,}")
-
-    steps = []
-    in_block = False
-    skip_sep = False
-    buf = []
-    pending_p = None
-
-    with _open(path) as fh:
-        for line in fh:
-            if re_force_hdr.search(line):
-                in_block = True
-                skip_sep = True
-                buf = []
-                continue
-
-            if in_block:
-                if skip_sep:
-                    skip_sep = False
-                    continue
-                if re_sep.match(line.strip()):
-                    in_block = False
-                    max_f = max(buf) if buf else None
-                    steps.append({"max_force": max_f, "pressure": pending_p})
-                    pending_p = None
-                    continue
-                parts = line.split()
-                if len(parts) >= 6:
-                    try:
-                        fx, fy, fz = float(parts[3]), float(parts[4]), float(parts[5])
-                        buf.append((fx*fx + fy*fy + fz*fz) ** 0.5)
-                    except ValueError:
-                        pass
-                continue
-
-            m = re_pressure.search(line)
-            if m:
-                pending_p = float(m.group(1))
-
-    return steps
+    return info, steps
 
 
 # ── INCAR fallback ────────────────────────────────────────────────────────────
@@ -218,17 +203,6 @@ def _parse_incar(path):
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
-def _fmt_time(seconds):
-    s = int(seconds)
-    h, s = divmod(s, 3600)
-    m, s = divmod(s, 60)
-    if h:
-        return f"{h}h {m:02d}m {s:02d}s"
-    if m:
-        return f"{m}m {s:02d}s"
-    return f"{s}s"
-
-
 def _calc_type(ibrion, nsw):
     if ibrion is None:
         return "Relaxation"
@@ -244,7 +218,6 @@ def print_summary(steps, outcar_info, force_steps=None):
     ibrion = outcar_info.get("ibrion")
     nsw    = outcar_info.get("nsw")
     ediffg = outcar_info.get("ediffg")
-    wtime  = outcar_info.get("walltime_s")
 
     # EDIFFG sets the criterion: negative is a force threshold in eV/Å,
     # positive is an energy threshold in eV.
@@ -332,13 +305,6 @@ def print_summary(steps, outcar_info, force_steps=None):
             print()
             print("  EDIFFG not found in INCAR or OUTCAR — no convergence criterion.")
 
-    if wtime is not None:
-        print()
-        print("  Timing:")
-        print(f"    Total walltime  =  {_fmt_time(wtime)}")
-        if n_done > 0:
-            print(f"    Avg per step    =  {_fmt_time(wtime / n_done)}")
-
     print()
 
 
@@ -388,13 +354,14 @@ def run_converge(path=".", save_data=False):
         sys.exit(1)
 
     outcar_info = {"ibrion": None, "nsw": None, "ediff": None,
-                   "ediffg": None, "nions": None, "walltime_s": None}
+                   "ediffg": None, "nions": None}
 
+    force_steps = None
     if outcar_path:
         try:
-            outcar_info = parse_outcar_header(outcar_path)
-        except Exception:
-            pass
+            outcar_info, force_steps = parse_outcar(outcar_path)
+        except Exception as e:
+            print(f"Warning: could not read OUTCAR: {e}")
 
     if incar_path:
         try:
@@ -408,14 +375,6 @@ def run_converge(path=".", save_data=False):
                     outcar_info[k] = incar_info.get(k)
         except Exception:
             pass
-
-    # Forces and pressure, when an OUTCAR is available
-    force_steps = None
-    if outcar_path:
-        try:
-            force_steps = parse_outcar_forces(outcar_path)
-        except Exception as e:
-            print(f"Warning: could not parse forces from OUTCAR: {e}")
 
     print_summary(steps, outcar_info, force_steps=force_steps)
 
