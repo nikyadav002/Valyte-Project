@@ -15,47 +15,56 @@ except ImportError:
 from valyte.potcar import generate_potcar
 
 
-def generate_band_kpoints(poscar_path="POSCAR", npoints=40, output="KPOINTS", symprec=0.01, mode="bradcrack"):
-    """Generate a line-mode KPOINTS file for band structure calculations."""
+def resolve_kpath(poscar_path="POSCAR", symprec=0.01, mode="bradcrack"):
+    """Resolve the high-symmetry k-path for a structure.
 
+    Returns (prim_std, path, kpoints):
+        prim_std  pymatgen Structure, the cell the path is defined in
+        path      list of branches, each a list of point labels; a break
+                  between branches is a discontinuity in the path
+        kpoints   {label: [kx, ky, kz]} in fractional reciprocal coordinates
+
+    Which cell comes back depends on the mode (seekpath's primitive for
+    bradcrack, pymatgen's primitive standard otherwise), so anything drawing
+    in reciprocal space must use the cell returned here rather than the input.
+    Writes nothing.
+    """
     if not os.path.exists(poscar_path):
         raise FileNotFoundError(f"{poscar_path} not found")
 
     mode = (mode or "bradcrack").lower()
-
     structure = Structure.from_file(poscar_path)
 
     if mode == "bradcrack":
         try:
             kpath = BradCrackKpath(structure, symprec=symprec)
-            prim_std = kpath.prim
-            path = kpath.path
-            kpoints = kpath.kpoints
-
-            standard_filename = "POSCAR_standard"
-            prim_std.to(filename=standard_filename)
+            return kpath.prim, kpath.path, kpath.kpoints
         except Exception as e:
             raise RuntimeError(f"Error generating Bradley-Cracknell path: {e}")
-    else:
-        try:
-            if mode == "seekpath":
-                mode = "hinuma"
 
-            sga = SpacegroupAnalyzer(structure, symprec=symprec)
-            prim_std = sga.get_primitive_standard_structure()
-        except Exception as e:
-            raise RuntimeError(f"Error during standardization: {e}")
+    if mode == "seekpath":
+        mode = "hinuma"
 
-        try:
-            kpath = HighSymmKpath(prim_std, path_type=mode, symprec=symprec)
+    try:
+        sga = SpacegroupAnalyzer(structure, symprec=symprec)
+        prim_std = sga.get_primitive_standard_structure()
+    except Exception as e:
+        raise RuntimeError(f"Error during standardization: {e}")
 
-            standard_filename = "POSCAR_standard"
-            prim_std.to(filename=standard_filename)
+    try:
+        kpath = HighSymmKpath(prim_std, path_type=mode, symprec=symprec)
+        return prim_std, kpath.kpath["path"], kpath.kpath["kpoints"]
+    except Exception as e:
+        raise RuntimeError(f"Error generating K-path: {e}")
 
-            path = kpath.kpath["path"]
-            kpoints = kpath.kpath["kpoints"]
-        except Exception as e:
-            raise RuntimeError(f"Error generating K-path: {e}")
+
+def generate_band_kpoints(poscar_path="POSCAR", npoints=40, output="KPOINTS", symprec=0.01, mode="bradcrack"):
+    """Generate a line-mode KPOINTS file for band structure calculations."""
+
+    prim_std, path, kpoints = resolve_kpath(poscar_path, symprec=symprec, mode=mode)
+
+    standard_filename = "POSCAR_standard"
+    prim_std.to(filename=standard_filename)
 
     try:
         with open(output, "w") as f:

@@ -46,6 +46,7 @@ nav:
     - Effective Mass: effmass.md
     - IPR: ipr.md
     - Convergence: converge.md
+    - Brillouin Zone: bz.md
   - Reference:
     - CLI Reference: cli-reference.md
     - FAQ & Troubleshooting: faq.md

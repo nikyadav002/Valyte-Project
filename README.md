@@ -105,6 +105,7 @@ walks through a calculation from setup to finished figure.
 | `valyte ipr` | Inverse participation ratio from a PROCAR, for judging localization |
 | `valyte bandgap` | Print the band gap and nothing else |
 | `valyte converge` | Per-step energy, force and pressure table for a structural relaxation |
+| `valyte bz` | First Brillouin zone with the suggested high-symmetry k-path |
 
 A couple of these need the right flags set in VASP: `--tricolor` and
 `--spin-texture` read projections out of `vasprun.xml`, so the run needs

@@ -12,7 +12,8 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pymatgen")
 
 from valyte import __version__
 from valyte.supercell import create_supercell
-from valyte.band import generate_band_kpoints
+from valyte.band import generate_band_kpoints, resolve_kpath
+from valyte.bz_plot import plot_brillouin_zone
 from valyte.band_plot import (
     DEFAULT_TRICOLORS,
     plot_band_structure,
@@ -237,6 +238,23 @@ def main():
     ipr_parser.add_argument("-o", "--output", default="ipr_procar.dat", help="Output data filename")
     ipr_parser.add_argument("--details", action="store_true", help="Print per-k-point IPR values")
 
+    # Brillouin zone
+    bz_parser = subparsers.add_parser("bz", help="Plot the suggested k-path in the first Brillouin zone")
+    bz_parser.add_argument("-i", "--input", default="POSCAR", help="Input POSCAR file")
+    bz_parser.add_argument("-o", "--output", default="valyte_bz.png", help="Output plot filename")
+    bz_parser.add_argument("--symprec", type=float, default=0.01, help="Symmetry precision (default: 0.01)")
+    bz_parser.add_argument("--mode", default="bradcrack",
+                           choices=["bradcrack", "seekpath", "hinuma", "setyawan_curtarolo", "latimer_munro"],
+                           help="K-path convention (default: bradcrack)")
+    bz_parser.add_argument("--elev", type=float, default=22, help="Viewing elevation in degrees (default: 22)")
+    bz_parser.add_argument("--azim", type=float, default=30, help="Viewing azimuth in degrees (default: 30)")
+    bz_parser.add_argument("--width", type=float, default=5.5, help="Plot width in inches (default: 5.5)")
+    bz_parser.add_argument("--height", type=float, default=5.5, help="Plot height in inches (default: 5.5)")
+    bz_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
+    bz_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
+    bz_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
+    bz_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
+
     # Convergence monitor
     conv_parser = subparsers.add_parser("converge", help="Monitor VASP structural relaxation convergence")
     conv_parser.add_argument("path", nargs="?", default=".", help="Directory or OSZICAR path (default: .)")
@@ -426,6 +444,24 @@ def main():
 
             if args.save_data:
                 save_results_dat(results)
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+    elif args.command == "bz":
+        try:
+            prim_std, path, kpoints = resolve_kpath(
+                args.input, symprec=args.symprec, mode=args.mode)
+            plot_brillouin_zone(
+                prim_std, path, kpoints,
+                output=_apply_format(args.output, args.format),
+                figsize=(args.width, args.height),
+                dpi=args.dpi,
+                bold=not args.no_bold,
+                fontsize=args.fontsize,
+                elev=args.elev,
+                azim=args.azim,
+            )
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)

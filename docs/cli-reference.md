@@ -421,6 +421,40 @@ valyte combined --save-data --format pdf
 
 ---
 
+## `valyte bz`
+
+Draw the first Brillouin zone with the suggested high-symmetry k-path.
+
+```bash
+valyte bz [options]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `-i`, `--input` | `POSCAR` | Input structure |
+| `-o`, `--output` | `valyte_bz.png` | Output plot filename |
+| `--mode` | `bradcrack` | `bradcrack`, `seekpath`, `hinuma`, `setyawan_curtarolo`, `latimer_munro` |
+| `--symprec` | `0.01` | Symmetry precision |
+| `--elev` | `22` | Viewing elevation in degrees |
+| `--azim` | `30` | Viewing azimuth in degrees |
+| `--width` | `5.5` | Plot width in inches |
+| `--height` | `5.5` | Plot height in inches |
+| `--format` | from `-o` extension | `png`, `pdf`, or `svg` |
+| `--dpi` | `400` | Output figure resolution |
+| `--fontsize` | per-plot default | Base font size in points |
+| `--no-bold` | off | Normal font weight and thinner lines |
+
+**Examples:**
+
+```bash
+valyte bz
+valyte bz --mode seekpath
+valyte bz --elev 60 --azim 120
+valyte bz --fontsize 18 --format pdf
+```
+
+---
+
 ## `valyte bandgap`
 
 Print the band gap read from `vasprun.xml` and nothing else.
