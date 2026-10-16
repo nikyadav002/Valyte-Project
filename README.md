@@ -62,6 +62,7 @@ Change into a directory with your VASP output and try any of these:
 valyte dos                      # density of states
 valyte band                     # band structure
 valyte converge                 # relaxation convergence table
+valyte bz                       # k-path in the Brillouin zone (needs only a POSCAR)
 ```
 
 If you'd rather see the whole thing end to end, the
@@ -88,6 +89,7 @@ walks through a calculation from setup to finished figure.
 | `valyte supercell nx ny nz` | Build a supercell from a POSCAR |
 | `valyte kpt` | Write a KPOINTS grid (Monkhorst-Pack or Gamma). Runs interactively if you pass no flags |
 | `valyte band kpt-gen` | Write a line-mode KPOINTS along a high-symmetry path, Bradley-Cracknell by default |
+| `valyte bz` | Draw the first Brillouin zone with that k-path on it, to check the path before the band run |
 | `valyte potcar` | Concatenate a POTCAR for the species in a POSCAR |
 
 ### Analysing the output
@@ -105,7 +107,6 @@ walks through a calculation from setup to finished figure.
 | `valyte ipr` | Inverse participation ratio from a PROCAR, for judging localization |
 | `valyte bandgap` | Print the band gap and nothing else |
 | `valyte converge` | Per-step energy, force and pressure table for a structural relaxation |
-| `valyte bz` | First Brillouin zone with the suggested high-symmetry k-path |
 
 A couple of these need the right flags set in VASP: `--tricolor` and
 `--spin-texture` read projections out of `vasprun.xml`, so the run needs
@@ -114,7 +115,7 @@ that. If a plot comes out empty, that's usually why.
 
 ### Shared options
 
-The four commands that draw figures (`dos`, `band`, `combined`, `effmass`) all
+The commands that draw figures (`dos`, `band`, `combined`, `effmass`, `bz`) all
 take the same output flags, so once you know them they work everywhere:
 
 | Flag | Effect |
@@ -125,9 +126,10 @@ take the same output flags, so once you know them they work everywhere:
 | `--no-bold` | Lighter type and thinner lines, closer to a journal house style |
 
 A few small exceptions: `valyte effmass` only draws its fit if you ask for it
-with `--plot`, `valyte converge` takes `--save-data` even though it prints a
-table rather than a figure, and `valyte ipr` always writes `ipr_procar.dat`
-(pass `-o` to name it something else).
+with `--plot`, `valyte bz` has no numbers to save so it has no `--save-data`,
+`valyte converge` takes `--save-data` even though it prints a table rather
+than a figure, and `valyte ipr` always writes `ipr_procar.dat` (pass `-o` to
+name it something else).
 
 Every command has `--help` if you just want to see what's there, and the
 [CLI reference](https://valyte-project.readthedocs.io/en/latest/cli-reference/)
@@ -141,6 +143,7 @@ has all of it on one page.
 |---|---|
 | [Getting Started](https://valyte-project.readthedocs.io/en/latest/getting-started/) | Installation, prerequisites, and your first plot |
 | [Band Structure](https://valyte-project.readthedocs.io/en/latest/band/) | Standard, tricolor, spin-resolved, and spin-texture modes |
+| [Brillouin Zone](https://valyte-project.readthedocs.io/en/latest/bz/) | The first Brillouin zone with the high-symmetry k-path |
 | [Density of States](https://valyte-project.readthedocs.io/en/latest/dos/) | Total and projected DOS with orbital resolution |
 | [Effective Mass](https://valyte-project.readthedocs.io/en/latest/effmass/) | Carrier effective masses from parabolic fitting |
 | [Convergence](https://valyte-project.readthedocs.io/en/latest/converge/) | Relaxation convergence: energy, force, and pressure |
