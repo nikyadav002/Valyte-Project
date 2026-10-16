@@ -37,10 +37,10 @@ def _build_kpoints(structure, kspacing, scheme):
         print("Using Gamma-only grid (1 1 1)")
         return Kpoints.gamma_automatic((1, 1, 1)), (1, 1, 1)
 
-    recip_lattice = structure.lattice.reciprocal_lattice
+    recip_lattice = structure.lattice.reciprocal_lattice_crystallographic
     b_lengths = recip_lattice.abc
 
-    # KSPACING-style estimate: N = |b| / kspacing
+    # Spacing is in 2π/Å, so use the reciprocal lattice without the 2π factor: N = |b| / kspacing
     grid = tuple(max(1, int(length / kspacing + 0.5)) for length in b_lengths)
 
     if scheme == "MP":
