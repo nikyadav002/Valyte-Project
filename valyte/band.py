@@ -96,8 +96,8 @@ def generate_band_kpoints(poscar_path="POSCAR", npoints=40, output="KPOINTS", sy
         raise RuntimeError(f"Error writing KPOINTS file: {e}")
 
     try:
-        print("Generating default POTCAR (PBE)...")
-        generate_potcar(poscar_path=poscar_path, functional="PBE", output="POTCAR")
+        print("Generating POTCAR (VASP-recommended, PBE_64)...")
+        generate_potcar(poscar_path=poscar_path, output="POTCAR")
     except Exception as e:
         print(f"Warning: could not generate POTCAR: {e}")
         print("Proceeding without POTCAR generation.")

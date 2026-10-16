@@ -75,8 +75,8 @@ def generate_kpoints(
 
     if not os.path.exists(potcar_file):
         try:
-            print("\nPOTCAR not found. Generating default POTCAR (PBE)...")
-            generate_potcar(poscar_path=poscar_path, functional="PBE", output=potcar_file)
+            print("\nPOTCAR not found. Generating POTCAR (VASP-recommended, PBE_64)...")
+            generate_potcar(poscar_path=poscar_path, output=potcar_file)
         except Exception as e:
             print(f"Warning: could not generate POTCAR: {e}")
     else:

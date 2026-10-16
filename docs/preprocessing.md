@@ -78,13 +78,19 @@ valyte potcar [options]
 |---|---|---|
 | `-i`, `--input` | `POSCAR` | Input POSCAR file |
 | `-o`, `--output` | `POTCAR` | Output filename |
-| `--functional` | `PBE` | Pseudopotential functional |
+| `--functional` | `PBE_64` | POTCAR set |
+| `--potcar` | — | Per-element overrides, e.g. `Fe=Fe_pv O=O_h` |
 
-**Available functionals:** `PBE`, `PBE_52`, `PBE_54`, `LDA`, `LDA_52`, `LDA_54`, `PW91`, and others supported by Pymatgen.
+Each element gets the potential VASP recommends in the [potpaw.64 PBE table](https://www.vasp.at/wiki/index.php/Available_pseudopotentials) (for example `Ti_sv`, `Ga_d`, `Ba_sv`, `Gd_3`); elements without a recommended variant use the plain symbol. The choice for each element is printed when the POTCAR is written.
+
+**Available functionals:** `PBE_64`, `PBE_54`, `PBE_52`, `PBE`, `LDA_64`, `LDA_54`, `LDA`, `PW91`, and others supported by Pymatgen.
 
 ```bash
-# Default PBE
+# VASP-recommended potentials, PBE_64
 valyte potcar
+
+# Use Fe_pv instead of the recommended Fe
+valyte potcar --potcar Fe=Fe_pv
 
 # Use PBE_54
 valyte potcar --functional PBE_54

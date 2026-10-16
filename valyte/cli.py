@@ -23,7 +23,7 @@ from valyte.band_plot import (
 from valyte.dos_plot import load_dos, plot_dos, plot_dos_panels, load_color_file
 from valyte.combined_plot import plot_combined
 from valyte.kpoints import generate_kpoints, generate_kpoints_interactive
-from valyte.potcar import generate_potcar
+from valyte.potcar import generate_potcar, parse_potcar_overrides
 from valyte.ipr import run_ipr, run_ipr_interactive
 from valyte.effmass import compute_effective_masses, print_results, save_results_dat
 from valyte.effmass_plot import plot_effective_mass
@@ -226,7 +226,9 @@ def main():
     potcar_parser = subparsers.add_parser("potcar", help="Generate POTCAR")
     potcar_parser.add_argument("-i", "--input", default="POSCAR", help="Input POSCAR file")
     potcar_parser.add_argument("-o", "--output", default="POTCAR", help="Output filename")
-    potcar_parser.add_argument("--functional", default="PBE", help="Functional (default: PBE)")
+    potcar_parser.add_argument("--functional", default="PBE_64", help="POTCAR set (default: PBE_64)")
+    potcar_parser.add_argument("--potcar", nargs="+", metavar="EL=NAME",
+                               help="Override the VASP-recommended POTCAR per element, e.g. Fe=Fe_pv O=O_h")
 
     # IPR
     ipr_parser = subparsers.add_parser("ipr", help="Compute IPR from PROCAR")
@@ -407,6 +409,7 @@ def main():
                 poscar_path=args.input,
                 functional=args.functional,
                 output=args.output,
+                overrides=parse_potcar_overrides(args.potcar),
             )
         except Exception as e:
             print(f"Error: {e}")

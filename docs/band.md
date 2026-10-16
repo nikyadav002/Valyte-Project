@@ -54,7 +54,7 @@ valyte band kpt-gen --mode seekpath
     Running the band calculation with your original POSCAR will produce incorrect k-point labels and potentially wrong paths. See [FAQ → My k-point labels are wrong](faq.md#my-k-point-labels-are-wrong-or-missing) for details.
 
 !!! note
-    A `POTCAR` is also automatically generated (PBE) after KPOINTS creation.
+    A `POTCAR` is also automatically generated (VASP-recommended potentials, PBE_64) after KPOINTS creation.
 
 ---
 

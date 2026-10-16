@@ -86,7 +86,8 @@ valyte potcar [options]
 |---|---|---|
 | `-i`, `--input` | `POSCAR` | Input POSCAR file |
 | `-o`, `--output` | `POTCAR` | Output filename |
-| `--functional` | `PBE` | Pseudopotential functional: `PBE`, `PBE_52`, `PBE_54`, `LDA`, `LDA_52`, `LDA_54`, `PW91`, etc. |
+| `--functional` | `PBE_64` | POTCAR set: `PBE_64`, `PBE_54`, `PBE_52`, `PBE`, `LDA_64`, `LDA_54`, `LDA`, `PW91`, etc. |
+| `--potcar` | — | Override the VASP-recommended POTCAR per element, e.g. `Fe=Fe_pv O=O_h` |
 
 !!! important "Pymatgen configuration required"
     Set `PMG_VASP_PSP_DIR` in `~/.pmgrc.yaml`. See [pymatgen docs](https://pymatgen.org/installation.html#potcar-setup).
@@ -95,6 +96,7 @@ valyte potcar [options]
 
 ```bash
 valyte potcar
+valyte potcar --potcar Fe=Fe_pv
 valyte potcar --functional PBE_54
 valyte potcar -i POSCAR_relaxed -o POTCAR_new
 ```
