@@ -96,8 +96,8 @@ valyte converge --save-data
 ## Data file (`--save-data`)
 
 `valyte_converge.dat` — plain text with columns: Step, E0 (eV), ΔE (eV),
-F_max (eV/Å), P (kB), mag. Columns sourced from `OUTCAR` are written as `—`
-when it is not available.
+F_max (eV/Å), P (kB), mag. Missing values are written as `nan`, so the file
+loads directly with `numpy.loadtxt`.
 
 ---
 

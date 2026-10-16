@@ -179,36 +179,63 @@ def parse_outcar(path):
 # ── INCAR fallback ────────────────────────────────────────────────────────────
 
 def _parse_incar(path):
+    # VASP tags are case-insensitive, "!" and "#" start comments, and ";"
+    # separates several tags on one line.
     info = {}
-    re_tag = re.compile(r"^\s*([A-Z]+\w*)\s*=\s*(.+?)(?:!.*)?$")
+    re_tag = re.compile(r"^\s*([A-Za-z]\w*)\s*=\s*(.+?)\s*$")
     with _open(path) as fh:
-        for line in fh:
-            m = re_tag.match(line)
-            if not m:
-                continue
-            tag, val = m.group(1).strip(), m.group(2).strip()
-            try:
-                if tag == "IBRION":
-                    info["ibrion"] = int(val)
-                elif tag == "NSW":
-                    info["nsw"] = int(val)
-                elif tag == "EDIFF":
-                    info["ediff"] = _float(val.split()[0])
-                elif tag == "EDIFFG":
-                    info["ediffg"] = _float(val.split()[0])
-            except (ValueError, IndexError):
-                pass
+        for raw in fh:
+            for stmt in re.split(r"[!#]", raw, maxsplit=1)[0].split(";"):
+                m = re_tag.match(stmt)
+                if m:
+                    _set_incar_tag(info, m.group(1).upper(), m.group(2))
     return info
+
+
+def _set_incar_tag(info, tag, val):
+    try:
+        if tag == "IBRION":
+            info["ibrion"] = int(val)
+        elif tag == "NSW":
+            info["nsw"] = int(val)
+        elif tag == "EDIFF":
+            info["ediff"] = _float(val.split()[0])
+        elif tag == "EDIFFG":
+            info["ediffg"] = _float(val.split()[0])
+    except (ValueError, IndexError):
+        pass
 
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
+def _effective_ibrion(ibrion, nsw):
+    """IBRION as VASP applies it: unset means -1 for NSW = 0, else 0 (MD)."""
+    if ibrion is None and nsw is not None:
+        return -1 if nsw == 0 else 0
+    return ibrion
+
+
+def _is_relaxation(ibrion, nsw):
+    return ibrion in (1, 2, 3) and nsw != 0
+
+
 def _calc_type(ibrion, nsw):
+    ibrion = _effective_ibrion(ibrion, nsw)
     if ibrion is None:
-        return "Relaxation"
+        return "Unknown (IBRION/NSW not found)"
+    if nsw == 0 or ibrion == -1:
+        kind = "Static"
+    elif ibrion in (1, 2, 3):
+        kind = "Relaxation"
+    elif ibrion == 0:
+        kind = "Molecular dynamics"
+    elif ibrion in (5, 6, 7, 8):
+        kind = "Phonons"
+    else:
+        kind = "Ionic run"
     if nsw:
-        return f"Relaxation (IBRION = {ibrion}, NSW = {nsw})"
-    return f"Relaxation (IBRION = {ibrion})"
+        return f"{kind} (IBRION = {ibrion}, NSW = {nsw})"
+    return f"{kind} (IBRION = {ibrion})"
 
 
 # ── Terminal summary ──────────────────────────────────────────────────────────
@@ -237,8 +264,13 @@ def print_summary(steps, outcar_info, force_steps=None):
 
     if ionic:
         last = ionic[-1]
+        eff_ibrion = _effective_ibrion(ibrion, nsw)
+        # EDIFFG only means something for a relaxation
+        not_relaxing = eff_ibrion is not None and not _is_relaxation(eff_ibrion, nsw)
 
-        if fthresh is not None:
+        if not_relaxing:
+            mark = "— (not a relaxation)"
+        elif fthresh is not None:
             fok = (force_steps and force_steps[-1]["max_force"] is not None
                    and force_steps[-1]["max_force"] < fthresh)
             mark = "✓ Converged" if fok else "✗ Not converged"
@@ -285,7 +317,9 @@ def print_summary(steps, outcar_info, force_steps=None):
                   f"   {f_str:>16s}   {p_str:>10s}")
 
         # ── Criterion footer ──────────────────────────────────────────────
-        if fthresh is not None:
+        if not_relaxing:
+            pass                     # no convergence criterion to report
+        elif fthresh is not None:
             print()
             print(f"  EDIFFG           =  {ediffg:g}  →  force criterion")
             print(f"  Force threshold  =  {fthresh:.4f} eV/Å")
@@ -315,16 +349,17 @@ def save_converge_dat(steps, force_steps=None, filepath="valyte_converge.dat"):
     with open(filepath, "w") as f:
         f.write("# Step  E0(eV)  dE(eV)  F_max(eV/A)  P(kB)  mag\n")
         for i, s in enumerate(ionic):
-            fmax = pres = "—"
+            fmax = pres = "nan"
             if force_steps and i < len(force_steps):
                 fs = force_steps[i]
                 if fs["max_force"] is not None:
                     fmax = f"{fs['max_force']:.6f}"
                 if fs["pressure"] is not None:
                     pres = f"{fs['pressure']:.3f}"
-            mag = f"{s['mag']:.4f}" if s["mag"] is not None else "—"
-            dE  = f"{s['dE']:.6e}"  if s["dE"]  is not None else "—"
-            e0  = f"{s['E0']:.8f}"  if s["E0"]  is not None else "—"
+            # "nan" keeps every column numeric for np.loadtxt
+            mag = f"{s['mag']:.4f}" if s["mag"] is not None else "nan"
+            dE  = f"{s['dE']:.6e}"  if s["dE"]  is not None else "nan"
+            e0  = f"{s['E0']:.8f}"  if s["E0"]  is not None else "nan"
             f.write(f"  {s['number']:5d}  {e0}  {dE}  {fmax}  {pres}  {mag}\n")
     print(f"Saved data: {filepath}")
 
