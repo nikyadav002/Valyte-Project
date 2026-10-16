@@ -497,7 +497,7 @@ def plot_dos(
     plt.close(fig)
 
     if save_data:
-        _save_dos_dat(dos, pdos, items_to_plot, "valyte_dos.dat")
+        _save_dos_dat(dos, pdos, items_to_plot, os.path.splitext(out)[0] + ".dat")
 
 
 def plot_dos_panels(
@@ -763,4 +763,4 @@ def plot_dos_panels(
                     items_to_plot.append((el_part, orb_part))
                 else:
                     items_to_plot.append((s_label, "total"))
-        _save_dos_dat(dos, pdos, items_to_plot, "valyte_dos.dat")
+        _save_dos_dat(dos, pdos, items_to_plot, os.path.splitext(out)[0] + ".dat")

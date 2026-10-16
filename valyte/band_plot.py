@@ -319,7 +319,7 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
     plt.close(fig)
 
     if save_data:
-        _save_band_dat(distances, energies, ticks, "valyte_band.dat")
+        _save_band_dat(distances, energies, ticks, os.path.splitext(output)[0] + ".dat")
 
 
 def plot_orbital_band_structure(
@@ -481,7 +481,7 @@ def plot_orbital_band_structure(
     print(f"Saved: {output}")
 
     if save_data:
-        _save_band_dat(distances, energies, ticks, "valyte_band.dat")
+        _save_band_dat(distances, energies, ticks, os.path.splitext(output)[0] + ".dat")
 
 
 def plot_spin_texture_band_structure(
@@ -633,4 +633,4 @@ def plot_spin_texture_band_structure(
     print(f"Saved: {output}")
 
     if save_data:
-        _save_band_dat(distances, energies, ticks, "valyte_band.dat")
+        _save_band_dat(distances, energies, ticks, os.path.splitext(output)[0] + ".dat")

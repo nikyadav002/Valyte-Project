@@ -1,6 +1,7 @@
 """First Brillouin zone with the suggested high-symmetry k-path."""
 
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
@@ -34,7 +35,7 @@ def _cartesian(lattice, frac):
 
 
 def plot_brillouin_zone(prim_std, path, kpoints, output="valyte_bz.png",
-                        figsize=(5.5, 5.5), dpi=400, font="Arial", bold=True,
+                        figsize=(5.5, 5.5), dpi=400, font=None, bold=True,
                         fontsize=None, elev=22, azim=30):
     """Draw the first Brillouin zone with the k-path overlaid.
 
@@ -55,6 +56,16 @@ def plot_brillouin_zone(prim_std, path, kpoints, output="valyte_bz.png",
     _fscale = font_scale(fontsize, 12)
     apply_style(font=font, bold=bold, fontsize=_fsbase,
                 linewidth=1.4 if bold else 0.8)
+    if font:
+        # Every label here is mathtext, which ignores font.family; point it
+        # at the requested font so --font actually changes the figure.
+        family = mpl.rcParams["font.family"][0]
+        mpl.rcParams.update({
+            "mathtext.fontset": "custom",
+            "mathtext.rm": family,
+            "mathtext.it": f"{family}:italic",
+            "mathtext.bf": f"{family}:bold",
+        })
 
     lattice = prim_std.lattice
 

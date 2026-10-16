@@ -43,8 +43,9 @@ A fit is produced for each high-symmetry direction in the band structure — so 
 | `-o`, `--output` | `valyte_effmass.png` | Output plot filename (used with `--plot`) |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--dpi` | `400` | Output figure resolution in DPI (used with `--plot`) |
-| `--save-data` | off | Save results to `valyte_effmass.dat` |
+| `--save-data` | off | Save results to a `.dat` named after `-o` (default `valyte_effmass.dat`) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+| `--font` | `Arial` | Font family |
 
 ---
 

@@ -199,6 +199,9 @@ valyte effmass --save-data       # → valyte_effmass.dat
 valyte converge --save-data      # → valyte_converge.dat
 ```
 
+The data file takes its name from `-o`, so `valyte band -o GaAs.png --save-data`
+writes `GaAs.dat`.
+
 These are plain-text, whitespace-delimited files that can be loaded into any plotting tool (Python, MATLAB, gnuplot, Origin, etc.).
 
 ### Something else is broken

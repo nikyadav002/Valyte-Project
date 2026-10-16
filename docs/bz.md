@@ -27,6 +27,7 @@ valyte bz [options]
 | `--dpi` | `400` | Output figure resolution |
 | `--fontsize` | per-plot default | Base font size in points; all labels scale with it |
 | `--no-bold` | off | Normal font weight and thinner lines |
+| `--font` | — | Font family for labels (`Arial`, `Helvetica`, `Times New Roman`); unset keeps the default math font |
 
 ---
 

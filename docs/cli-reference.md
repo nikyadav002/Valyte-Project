@@ -151,7 +151,7 @@ valyte band [options]
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--dpi` | `400` | Output figure resolution in DPI |
-| `--save-data` | off | Save band data to `valyte_band.dat` |
+| `--save-data` | off | Save band data to a `.dat` named after `-o` (default `valyte_band.dat`) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 ### Tricolor mode
@@ -247,7 +247,7 @@ valyte dos [path/to/vasprun.xml] [options]
 | `--font` | `Arial` | Font family |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--dpi` | `400` | Output figure resolution in DPI |
-| `--save-data` | off | Save DOS data to `valyte_dos.dat` |
+| `--save-data` | off | Save DOS data to a `.dat` named after `-o` (default `valyte_dos.dat`) |
 | `--panels` | off | Split DOS into stacked panels (one per element) |
 | `--panel-by` | `element` | Grouping for panels: `element` or `orbital` |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
@@ -334,8 +334,9 @@ valyte effmass [options]
 | `-o`, `--output` | `valyte_effmass.png` | Output plot filename (with `--plot`) |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--dpi` | `400` | Output figure resolution in DPI (used with `--plot`) |
-| `--save-data` | off | Save results to `valyte_effmass.dat` |
+| `--save-data` | off | Save results to a `.dat` named after `-o` (default `valyte_effmass.dat`) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+| `--font` | `Arial` | Font family |
 
 !!! warning "Requires a line-mode band structure calculation. SCF calculations will raise an error."
 
@@ -445,6 +446,7 @@ valyte bz [options]
 | `--dpi` | `400` | Output figure resolution |
 | `--fontsize` | per-plot default | Base font size in points |
 | `--no-bold` | off | Normal font weight and thinner lines |
+| `--font` | — | Font family for labels (`Arial`, `Helvetica`, `Times New Roman`); unset keeps the default math font |
 
 **Examples:**
 

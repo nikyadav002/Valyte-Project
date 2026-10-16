@@ -138,7 +138,7 @@ def main():
     dos_parser.add_argument("--font", default="Arial", help="Font family")
     dos_parser.add_argument("--width", type=float, default=4.45, help="Plot width in inches (default: 4.45)")
     dos_parser.add_argument("--height", type=float, default=4.2, help="Plot height in inches (default: 4.2)")
-    dos_parser.add_argument("--save-data", action="store_true", help="Save DOS data to valyte_dos.dat")
+    dos_parser.add_argument("--save-data", action="store_true", help="Also save DOS data as a .dat named after -o")
     dos_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
     dos_parser.add_argument("--panels", action="store_true",
                             help="Split DOS into stacked panels (one per element)")
@@ -186,7 +186,7 @@ def main():
     band_parser.add_argument("--lw", type=float, default=2.0, help="Line width for tricolor bands (default: 2.0)")
     band_parser.add_argument("--width", type=float, default=4.2, help="Plot width in inches (default: 4.2)")
     band_parser.add_argument("--height", type=float, default=4.2, help="Plot height in inches (default: 4.2)")
-    band_parser.add_argument("--save-data", action="store_true", help="Save band data to valyte_band.dat")
+    band_parser.add_argument("--save-data", action="store_true", help="Also save band data as a .dat named after -o")
     band_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
     band_parser.add_argument(
         "--spin-resolved", action="store_true",
@@ -253,6 +253,7 @@ def main():
     bz_parser.add_argument("--width", type=float, default=5.5, help="Plot width in inches (default: 5.5)")
     bz_parser.add_argument("--height", type=float, default=5.5, help="Plot height in inches (default: 5.5)")
     bz_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
+    bz_parser.add_argument("--font", default=None, help="Font family: Arial, Helvetica, Times New Roman (default: matplotlib math font)")
     bz_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
     bz_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
     bz_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
@@ -270,9 +271,10 @@ def main():
     effmass_parser.add_argument("--band-index", type=int, nargs="+", default=None, help="Manual 1-indexed band indices to fit")
     effmass_parser.add_argument("--plot", action="store_true", help="Save parabolic fit plot")
     effmass_parser.add_argument("-o", "--output", default="valyte_effmass.png", help="Output plot filename (with --plot)")
-    effmass_parser.add_argument("--save-data", action="store_true", help="Save results to valyte_effmass.dat")
+    effmass_parser.add_argument("--save-data", action="store_true", help="Save results as a .dat named after -o (default: valyte_effmass.dat)")
     effmass_parser.add_argument("--tol", type=float, default=1e-3, help="Degeneracy tolerance in eV (default: 1e-3)")
     effmass_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
+    effmass_parser.add_argument("--font", default="Arial", help="Font family")
     effmass_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
     effmass_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
     effmass_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
@@ -443,10 +445,11 @@ def main():
 
             if args.plot:
                 plot_effective_mass(results, output=_apply_format(args.output, args.format), dpi=args.dpi,
+                                    font=args.font,
                                     bold=not args.no_bold, fontsize=args.fontsize)
 
             if args.save_data:
-                save_results_dat(results)
+                save_results_dat(results, os.path.splitext(args.output)[0] + ".dat")
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)
@@ -462,6 +465,7 @@ def main():
                 dpi=args.dpi,
                 bold=not args.no_bold,
                 fontsize=args.fontsize,
+                font=args.font,
                 elev=args.elev,
                 azim=args.azim,
             )

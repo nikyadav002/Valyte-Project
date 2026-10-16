@@ -75,7 +75,7 @@ valyte band [options]
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--dpi` | `400` | Output figure resolution in DPI |
-| `--save-data` | off | Save band data to `valyte_band.dat` |
+| `--save-data` | off | Save band data to a `.dat` named after `-o` (default `valyte_band.dat`) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 ```bash
@@ -138,7 +138,7 @@ valyte band --tricolor SPEC1 SPEC2 SPEC3 [options]
 | `--tri-labels` | spec strings | Labels shown at the triangle legend vertices |
 | `--lw` | `2.0` | Band line width |
 | `--ylim`, `-o`, `--font`, `--format` | — | Same as standard band options |
-| `--save-data` | off | Save band data to `valyte_band.dat` (same format as standard plot) |
+| `--save-data` | off | Save band data to a `.dat` named after `-o` (default `valyte_band_orbital.dat`) (same format as standard plot) |
 
 ### How the colors work
 
@@ -198,7 +198,7 @@ valyte band --spin-resolved [options]
 | `--font` | `Arial` | Font family |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--width` / `--height` | `4.0` | Figure dimensions in inches |
-| `--save-data` | off | Save band data to `valyte_band.dat` |
+| `--save-data` | off | Save band data to a `.dat` named after `-o` (default `valyte_band.dat`) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 ### Examples
@@ -244,7 +244,7 @@ valyte band --spin-texture {sx,sy,sz} [options]
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--width` / `--height` | `4.0` | Figure dimensions in inches |
 | `--lw` | `2.0` | Band line width |
-| `--save-data` | off | Save band energies to `valyte_band.dat` |
+| `--save-data` | off | Save band energies to a `.dat` named after `-o` (default `valyte_band_sz.dat` etc.) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
 ### How it works

@@ -30,7 +30,7 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--dpi` | `400` | Output figure resolution in DPI |
-| `--save-data` | off | Save DOS data to `valyte_dos.dat` |
+| `--save-data` | off | Save DOS data to a `.dat` named after `-o` (default `valyte_dos.dat`, or `valyte_dos_panels.dat` with `--panels`) |
 | `--panels` | off | Split DOS into vertically stacked panels (one per element) |
 | `--panel-by` | `element` | Grouping mode for panels: `element` or `orbital` |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
