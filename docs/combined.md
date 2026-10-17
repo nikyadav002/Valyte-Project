@@ -79,3 +79,4 @@ When using `--save-data`, two separate files are written:
 
 2. **`valyte_combined_dos.dat`**:
    - Contains the energy coordinates and the selected projected density of states (PDOS) columns for the right panel.
+   - For spin-polarized runs each column has `_up` and `_dn` versions; spin-down values are written as positive numbers, the same as in `valyte_dos.dat`.

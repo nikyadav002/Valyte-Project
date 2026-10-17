@@ -30,6 +30,11 @@ from valyte.effmass_plot import plot_effective_mass
 from valyte.converge import run_converge
 from valyte.bandgap import get_bandgap
 
+# seekpath still reads spglib datasets as dicts, which spglib >= 2.5 deprecates.
+# spglib registers its own filter for this on import, so ours must come after
+# the imports above (which pull in spglib) to take precedence.
+warnings.filterwarnings("ignore", category=DeprecationWarning, message=r"dict interface")
+
 
 def _apply_format(output, fmt):
     if not fmt:

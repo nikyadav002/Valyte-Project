@@ -156,6 +156,7 @@ A plain-text, whitespace-delimited file with one row per energy point:
 - **`Total_dn`** — total DOS spin-down channel (spin-polarized calculations only)
 - Remaining columns are one per plotted element/orbital (e.g. `Fe_up`, `Fe(d)_up`) matching exactly what is shown in the plot
 - Spin-down columns are labeled `_dn` and appear immediately after their `_up` counterpart
+- Spin-down values are written as positive numbers; only the plot draws them below zero
 
 ---
 

@@ -426,7 +426,8 @@ def plot_combined(
                     y_dn = sum(o.get(Spin.down, np.zeros_like(dos_data.energies)) for o in pdos_data[el].values())
                 else:
                     y_dn = pdos_data[el][orb].get(Spin.down, np.zeros_like(dos_data.energies))
-                dos_cols.append(-y_dn)
+                # positive, as in valyte_dos.dat; only the plot draws spin-down below zero
+                dos_cols.append(y_dn)
                 dos_labels.append(f"{label}_dn")
 
         header = "  ".join(dos_labels)

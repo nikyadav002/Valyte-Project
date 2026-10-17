@@ -149,8 +149,11 @@ class BradCrackKpath:
         unique_val = min(angles_r, key=angles_r.count)
         unique = angles_r.index(unique_val)
 
-        spg_symbol = self._spg_data["international"]
-        spg_number = self._spg_data["number"]
+        # spglib >= 2.5 returns a dataclass and deprecates item access;
+        # older versions return a plain dict.
+        spg = self._spg_data
+        spg_symbol = getattr(spg, "international", None) or spg["international"]
+        spg_number = getattr(spg, "number", None) or spg["number"]
 
         lattice_type = self.get_lattice_type(spg_number)
         bravais = self._get_bravais_lattice(spg_symbol, lattice_type, a, b, c, unique)
