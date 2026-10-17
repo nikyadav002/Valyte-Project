@@ -12,57 +12,91 @@ from matplotlib.patches import Polygon
 from matplotlib.ticker import AutoMinorLocator
 from pymatgen.io.vasp import Vasprun
 from pymatgen.electronic_structure.core import Spin
-import re
 
-from valyte.style import apply_style, get_font_weight, DEFAULT_PALETTE, font_scale, energy_ticks
+from valyte.style import apply_style, get_font_weight, font_scale, energy_ticks
+from valyte.colors import assign_styles, series_stats, load_color_file  # noqa: F401 (re-exported)
 
 
-def load_color_file(filepath):
-    """Load color mapping from JSON or plain key-value text file."""
-    if not filepath or not os.path.exists(filepath):
-        return {}
+def _collect_series(dos, pdos, items_to_plot, x_mask, is_spin_polarized):
+    """Build the DOS curves to draw for `items_to_plot` [(element, orbital)].
 
-    colors = {}
-    if filepath.endswith(".json"):
-        import json
-        with open(filepath, "r") as f:
-            raw = json.load(f)
-            for k, v in raw.items():
-                v_str = str(v).strip()
-                if re.match(r"^[0-9a-fA-F]{3,6}$", v_str):
-                    v_str = "#" + v_str
-                colors[k] = v_str
-        return colors
-
-    with open(filepath, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
+    orbital "total" sums all orbitals of the element. Missing elements or
+    orbitals are skipped. Spin-down densities are returned negated, ready to
+    draw below the axis.
+    """
+    zeros = np.zeros_like(dos.energies)
+    series = []
+    for el, orb in items_to_plot:
+        if el not in pdos:
+            continue
+        if orb == "total":
+            y_up, y_down = zeros.copy(), zeros.copy()
+            for o_data in pdos[el].values():
+                y_up = y_up + o_data.get(Spin.up, zeros)
+                y_down = y_down + o_data.get(Spin.down, zeros)
+            label = el
+        else:
+            if orb not in pdos[el]:
                 continue
-            parts = re.split(r"[\s:=]+", line, maxsplit=1)
-            if len(parts) == 2:
-                key, val = parts[0].strip(), parts[1].strip()
-                if re.match(r"^[0-9a-fA-F]{3,6}$", val):
-                    val = "#" + val
-                colors[key] = val
-    return colors
+            y_up = pdos[el][orb].get(Spin.up, zeros)
+            y_down = pdos[el][orb].get(Spin.down, zeros)
+            label = f"{el}({orb})"
+        peak, weight = series_stats(dos.energies, y_up,
+                                    y_down if is_spin_polarized else None, x_mask)
+        series.append({
+            "label": label, "el": el, "orb": None if orb == "total" else orb,
+            "peak": peak, "weight": weight, "y_up": y_up, "y_down": -y_down,
+        })
+    return series
 
 
-def resolve_color(label, el, orb, index, colors, palette):
-    """Resolve color for a given label/element/orbital."""
-    c = None
-    if isinstance(colors, dict):
-        c = colors.get(label) or colors.get(el) or colors.get(orb)
-    elif isinstance(colors, (list, tuple)) and index < len(colors):
-        c = colors[index]
+def warn_missing_selection(pdos, plotting_config):
+    """Warn about -e entries that the calculation has no data for."""
+    for el, orb in plotting_config or []:
+        if not pdos.get(el):
+            print(f"Warning: no projected DOS for {el}. Check that it is in the "
+                  "structure and that the run used LORBIT >= 10.")
+        elif orb != "total" and orb not in pdos[el]:
+            print(f"Warning: {el} has no {orb} projection "
+                  f"(available: {', '.join(sorted(pdos[el]))}).")
 
-    if not c:
-        c = palette[index % len(palette)]
 
-    if isinstance(c, str) and re.match(r"^[0-9a-fA-F]{3,6}$", c):
-        c = "#" + c
-    return c
+_ORB_RANK = {"s": 0, "p": 1, "d": 2, "f": 3}
 
+
+def _panel_styles(panels, group_by, x_mask, palette, colors):
+    """Colour every series of a panel figure in one pass, keyed by entity.
+
+    Returns {(panel_index, series_index): style}. The entity is the orbital in
+    element panels and the element in orbital panels, so it keeps one colour
+    in every panel it appears in.
+    """
+    flat, where, el_rank = [], [], {}
+    for idx, (panel_label, series) in enumerate(panels):
+        for j, (s_label, y_up, y_down) in enumerate(series):
+            if group_by == "orbital":
+                el, orb, key = s_label, None, s_label
+            elif "(" in s_label and s_label.endswith(")"):
+                el, orb = s_label[:s_label.index("(")], s_label[s_label.index("(") + 1:-1]
+                key = orb
+            else:
+                el, orb, key = s_label, None, "total"
+            el_rank.setdefault(el, len(el_rank))
+            peak, weight = series_stats(None, y_up, y_down, x_mask)
+            flat.append({"label": s_label, "el": el, "orb": orb, "key": key,
+                         "peak": peak, "weight": weight})
+            where.append((idx, j))
+
+    # Palette slots go to entities in a fixed order: s, p, d, f, element
+    # totals, or elements in order of appearance.
+    def entity_rank(item):
+        k = item["key"]
+        return _ORB_RANK.get(k, 4) if group_by != "orbital" else el_rank[k]
+
+    order = sorted(range(len(flat)), key=lambda i: (entity_rank(flat[i]), i))
+    styles = assign_styles([flat[i] for i in order], palette=palette,
+                           colors=colors, explicit=True)
+    return {where[i]: st for i, st in zip(order, styles)}
 
 
 def gradient_fill(x, y, ax=None, color=None, xlim=None, **kwargs):
@@ -299,8 +333,14 @@ def plot_dos(
     bold=True,
     colors=None,
     fontsize=None,
+    palette=None,
 ):
-    """Plot total and projected DOS with the Valyte style."""
+    """Plot total and projected DOS with the Valyte style.
+
+    `palette` names a colour palette ('wong', the default, 'bright' or
+    'muted') or gives a list of colours; `colors` maps individual series
+    (e.g. {"Fe(d)": "red"}) and always takes precedence.
+    """
 
     _weight = get_font_weight(bold)
     _fsbase = fontsize if fontsize is not None else 12
@@ -316,127 +356,44 @@ def plot_dos(
     if is_spin_polarized:
         ax.axhline(0, color="k", lw=0.5, alpha=1.0)
 
-    palette = [
-        "#e63946",  # red
-        "#457b9d",  # steel blue
-        "#2a9d8f",  # teal
-        "#f4a261",  # sandy orange
-        "#6a4c93",  # ultra violet
-        "#8ac926",  # yellow-green
-        "#1982c4",  # cerulean
-        "#ca6702",  # bronze
-        "#ff595e",  # coral
-        "#6a994e",  # olive
-        "#b5179e",  # magenta
-        "#219ebc",  # pacific cyan
-        "#9b2226",  # dark red
-        "#606c38",  # army green
-        "#0077b6",  # blue
-        "#bb3e03",  # rust
-        "#005f73",  # dark teal
-        "#ee9b00",  # amber
-        "#7209b7",  # purple
-        "#94d2bd",  # sage
-    ]
-    lines, labels = [], []
-
     x_mask = (dos.energies >= xlim[0]) & (dos.energies <= xlim[1])
 
     if plotting_config:
         items_to_plot = plotting_config
+        warn_missing_selection(pdos, plotting_config)
     else:
         items_to_plot = []
         for el, el_pdos in pdos.items():
             for orb in el_pdos.keys():
                 items_to_plot.append((el, orb))
 
-    max_visible_y = 0
+    series = _collect_series(dos, pdos, items_to_plot, x_mask, is_spin_polarized)
+    styles = assign_styles(series, palette=palette, colors=colors,
+                           cutoff=legend_cutoff, explicit=bool(plotting_config))
+
+    max_visible_y = max((s["y_up"][x_mask].max(initial=0.0) for s in series), default=0.0)
     min_visible_y = 0
+    if is_spin_polarized:
+        min_visible_y = min((s["y_down"][x_mask].min(initial=0.0) for s in series), default=0.0)
 
-    for i, (el, orb) in enumerate(items_to_plot):
-        if el not in pdos:
-            continue
-
-        label = el if orb == "total" else f"{el}({orb})"
-        c = resolve_color(label, el, orb, i, colors, palette)
-
-
-        if orb == "total":
-            y_up = np.zeros_like(dos.energies)
-            y_down = np.zeros_like(dos.energies)
-            for o_data in pdos[el].values():
-                y_up += o_data.get(Spin.up, np.zeros_like(dos.energies))
-                y_down += o_data.get(Spin.down, np.zeros_like(dos.energies))
-            label = el
-        else:
-            if orb not in pdos[el]:
-                continue
-            y_up = pdos[el][orb].get(Spin.up, np.zeros_like(dos.energies))
-            y_down = pdos[el][orb].get(Spin.down, np.zeros_like(dos.energies))
-            label = f"{el}({orb})"
-
-        y_down = -y_down
-
-        visible_y_up = y_up[x_mask]
-        visible_y_down = y_down[x_mask]
-
-        has_visible_data = False
-        current_max_y = 0
-
-        if len(visible_y_up) > 0:
-            max_y = np.max(visible_y_up)
-            max_visible_y = max(max_visible_y, max_y)
-            current_max_y = max(current_max_y, max_y)
-            if max_y > 1e-6:
-                has_visible_data = True
-
-        if is_spin_polarized and len(visible_y_down) > 0:
-            min_y = np.min(visible_y_down)
-            min_visible_y = min(min_visible_y, min_y)
-            current_max_y = max(current_max_y, abs(min_y))
-            if abs(min_y) > 1e-6:
-                has_visible_data = True
-
-        line, = ax.plot(dos.energies, y_up, lw=1.5, color=c, label=label, alpha=0)
-        lines.append(
-            {
-                "line": line,
-                "y_up": y_up,
-                "y_down": y_down,
-                "max_y": current_max_y,
-                "color": c,
-                "label": label,
-                "has_visible": has_visible_data,
-            }
-        )
-
-    global_max = max(max_visible_y, abs(min_visible_y))
-    threshold = legend_cutoff * global_max
-
-    final_lines = []
-    final_labels = []
-
-    for item in lines:
-        line = item["line"]
-        y_up = item["y_up"]
-        y_down = item["y_down"]
-        c = item["color"]
-        label = item["label"]
-        max_y = item["max_y"]
-        has_visible = item["has_visible"]
-
-        line.set_alpha(1.0)
-
-        gradient_fill(dos.energies, y_up, ax=ax, color=c, alpha=0.9)
+    # Grey background series first, then the legend series largest-first, so
+    # smaller channels are drawn on top of the bigger fills.
+    order = sorted(range(len(series)),
+                   key=lambda i: (styles[i]["rank"] is not None, styles[i]["rank"] or 0))
+    legend_items = []
+    for i in order:
+        s, st = series[i], styles[i]
+        line = gradient_fill(dos.energies, s["y_up"], ax=ax, color=st["color"],
+                             alpha=0.9, ls=st["ls"])
         if is_spin_polarized:
-            gradient_fill(dos.energies, y_down, ax=ax, color=c, alpha=0.9)
+            gradient_fill(dos.energies, s["y_down"], ax=ax, color=st["color"],
+                          alpha=0.9, ls=st["ls"])
+        if st["legend"] and line is not None:
+            legend_items.append((st["rank"], line, s["label"]))
 
-        if has_visible and max_y >= threshold:
-            final_lines.append(line)
-            final_labels.append(label)
-
-    lines = final_lines
-    labels = final_labels
+    legend_items.sort(key=lambda t: t[0])
+    lines = [t[1] for t in legend_items]
+    labels = [t[2] for t in legend_items]
 
     if show_total:
         y_total_up = dos.spin_up
@@ -518,6 +475,7 @@ def plot_dos_panels(
     bold=True,
     colors=None,
     fontsize=None,
+    palette=None,
 ):
     """Plot DOS as vertically stacked panels — one per element (or per orbital).
 
@@ -527,16 +485,21 @@ def plot_dos_panels(
         ``"element"`` (default) — one panel per element, orbitals shown within.
         ``"orbital"`` — one panel per angular-momentum channel (s, p, d, f),
         elements shown within each.
+    palette, colors
+        As in `plot_dos`. Colours follow the entity across panels: with
+        ``group_by="element"`` each orbital keeps one colour in every panel,
+        with ``group_by="orbital"`` each element does.
     """
 
     _weight = get_font_weight(bold)
     _fsbase = fontsize if fontsize is not None else 11
     _fscale = font_scale(fontsize, 11)
     apply_style(font=font, bold=bold, fontsize=_fsbase)
-    palette = DEFAULT_PALETTE
 
     is_spin_polarized = Spin.down in dos.densities
     x_mask = (dos.energies >= xlim[0]) & (dos.energies <= xlim[1])
+    if plotting_config:
+        warn_missing_selection(pdos, plotting_config)
 
     # ------------------------------------------------------------------
     # Build panel groups: list of (panel_label, [(series_label, y_up, y_down), ...])
@@ -627,6 +590,8 @@ def plot_dos_panels(
     y_total_up = dos.spin_up
     y_total_down = -dos.spin_down
 
+    styles = _panel_styles(panels, group_by, x_mask, palette, colors)
+
     for idx, (panel_label, series) in enumerate(panels):
         ax = axes[idx]
 
@@ -655,10 +620,8 @@ def plot_dos_panels(
         legend_labels = []
 
         for j, (s_label, y_up, y_down) in enumerate(series):
-            el_name = s_label[:s_label.index("(")] if "(" in s_label else s_label
-            orb_name = s_label[s_label.index("(") + 1:-1] if "(" in s_label and s_label.endswith(")") else "total"
-            c = resolve_color(s_label, el_name, orb_name, j, colors, palette)
-
+            st = styles[(idx, j)]
+            c = st["color"]
 
             vis_up = y_up[x_mask]
             vis_dn = y_down[x_mask]
@@ -668,11 +631,11 @@ def plot_dos_panels(
             if is_spin_polarized and len(vis_dn) > 0:
                 panel_min_y = min(panel_min_y, np.min(vis_dn))
 
-            l = gradient_fill(dos.energies, y_up, ax=ax, color=c, alpha=0.85)
+            l = gradient_fill(dos.energies, y_up, ax=ax, color=c, alpha=0.85, ls=st["ls"])
             if is_spin_polarized:
-                gradient_fill(dos.energies, y_down, ax=ax, color=c, alpha=0.85)
+                gradient_fill(dos.energies, y_down, ax=ax, color=c, alpha=0.85, ls=st["ls"])
 
-            if l is not None:
+            if l is not None and st["legend"]:
                 legend_lines.append(l)
                 legend_labels.append(s_label)
 

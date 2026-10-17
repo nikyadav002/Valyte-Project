@@ -97,6 +97,7 @@ walks through a calculation from setup to finished figure.
 | Command | What it does |
 |---|---|
 | `valyte dos` | Total and projected DOS, orbital resolved, with gradient fills |
+| `valyte dos --palette muted` | Another colour-blind-friendly palette (`wong` is the default, also `bright`, `muted`) |
 | `valyte dos --panels` | The same DOS split into stacked panels, one per element (`--panel-by orbital` for orbitals instead) |
 | `valyte band` | Band structure with the VBM placed at 0 eV |
 | `valyte band --tricolor s p d` | Orbital-projected bands colored by three specs. Accepts `s`, `Fe`, `Fe:d`, `O(p)` |

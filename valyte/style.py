@@ -11,12 +11,9 @@ FONT_MAP = {
     "times new roman": "Times New Roman",
 }
 
-DEFAULT_PALETTE = [
-    "#e63946", "#457b9d", "#2a9d8f", "#f4a261", "#6a4c93",
-    "#8ac926", "#1982c4", "#ca6702", "#ff595e", "#6a994e",
-    "#b5179e", "#219ebc", "#9b2226", "#606c38", "#0077b6",
-    "#bb3e03", "#005f73", "#ee9b00", "#7209b7", "#94d2bd",
-]
+# Palettes live in valyte.colors; this name is kept for existing imports.
+from valyte.colors import WONG as _WONG
+DEFAULT_PALETTE = list(_WONG)
 
 
 def resolve_font_family(font: str = "Arial") -> str:

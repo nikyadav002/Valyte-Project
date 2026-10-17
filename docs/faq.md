@@ -98,14 +98,15 @@ LORBIT = 11
 
 **Fix:** Increase the k-point density. For metals, a very dense grid (e.g., k-spacing < 0.03 in 2π/Å) is often needed for smooth DOS.
 
-### Legend is not showing
+### A channel is grey or missing from the legend
 
-**Cause:** The `--legend-cutoff` threshold is hiding the legend because the projected contributions are small relative to the total DOS.
+**Cause:** Its peak is below `--legend-cutoff` (10% of the largest channel by default), so it is drawn in grey without a legend entry.
 
-**Fix:** Lower the cutoff:
+**Fix:** Name it with `-e`, which always colours and lists it, or lower the cutoff:
 
 ```bash
-valyte dos -e Fe O --legend-cutoff 0.01
+valyte dos -e "Pb(s)" "Pb(p)" "I(p)"
+valyte dos --legend-cutoff 0.03
 ```
 
 ---

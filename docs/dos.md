@@ -19,13 +19,14 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 |---|---|---|
 | `-e`, `--elements` | all | Elements/orbitals to plot, optionally with inline colors (`Fe(d):red`, `O(p):#2a9d8f`) |
 | `--colors-file` | none | Path to JSON or text file mapping elements/orbitals/species to colors |
-| `-c`, `--colors` | none | Custom colors mapping or list (`Fe(d)=red O(p)=blue` or `red blue`) |
+| `-c`, `--colors` | none | Custom colours: per series (`Fe(d)=red O(p)=0072B2`) and/or a plain list that replaces the palette (`red blue`) |
+| `--palette` | `wong` | Colour palette for the projected DOS: `wong`, `bright` or `muted` (see [Colours](#colours)) |
 | `--xlim` | `-6 6` | Energy range in eV |
 | `--ylim` | auto | DOS range |
 | `--scale` | `1.0` | Divide all DOS values by this factor (zoom in on small features) |
 | `--fermi` | off | Draw a dashed vertical line at the Fermi level (E = 0) |
 | `--pdos` | off | Show only projected DOS (hide total DOS) |
-| `--legend-cutoff` | `0.10` | Hide the legend if the max PDOS contribution is below this fraction of total |
+| `--legend-cutoff` | `0.10` | Channels whose peak is below this fraction of the largest are drawn grey and left out of the legend. Channels named with `-e` are always shown |
 | `-o`, `--output` | `valyte_dos.png` | Output filename |
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
@@ -46,38 +47,80 @@ The `-e` / `--elements` flag accepts element names, orbital projections, and inl
 | Element | `Fe` | Total PDOS for Fe (all orbitals summed) |
 | Orbital | `Fe(d)` or `Fe:d` | Only the d-orbital contribution of Fe |
 | Inline Color | `Fe(d):red` or `O(p):#2a9d8f` | Assign specific colors (names or hex codes) |
-| Hex Code | `Fe(d):e63946` | Hex code without `#` (convenient in CLI) |
+| Hex Code | `Fe(d):0072B2` or `Fe:d=0072B2` | Hex code without `#` (convenient in CLI) |
 
 ---
 
-## Color Customization
+## Colours
 
-You can customize colors via a config file, CLI `--colors`, or inline in `-e`:
+### Palettes
 
-### Using a colors file (`--colors-file`)
-Create a JSON or simple key-value file mapping elements, orbital channels, or specific species (`Fe(d)`) to colors:
+Projected DOS curves take their colours from a palette, chosen with `--palette`:
+
+| Palette | Colours | Character |
+|---|---|---|
+| `wong` (default) | <span style="color:#0072B2">■</span> <span style="color:#D55E00">■</span> <span style="color:#009E73">■</span> <span style="color:#CC79A7">■</span> <span style="color:#E69F00">■</span> <span style="color:#56B4E9">■</span> | Bang Wong's colour-blind-safe set: blue, vermillion, bluish green, reddish purple, orange, sky blue |
+| `bright` | <span style="color:#4477AA">■</span> <span style="color:#EE6677">■</span> <span style="color:#228833">■</span> <span style="color:#CCBB44">■</span> <span style="color:#66CCEE">■</span> <span style="color:#AA3377">■</span> | Paul Tol's bright scheme, designed to stay distinct with colour blindness |
+| `muted` | <span style="color:#CC6677">■</span> <span style="color:#332288">■</span> <span style="color:#DDCC77">■</span> <span style="color:#117733">■</span> <span style="color:#88CCEE">■</span> <span style="color:#882255">■</span> <span style="color:#44AA99">■</span> <span style="color:#999933">■</span> <span style="color:#AA4499">■</span> | Paul Tol's muted scheme: softer tones, and the most colours (9) |
+
+```bash
+valyte dos                    # wong
+valyte dos --palette bright
+valyte dos --palette muted
+```
+
+The total DOS is always black, so no palette uses black.
+
+### How colours are assigned
+
+- **Biggest channels first.** Channels that make the legend take palette colours in order of how many states they have in the energy window, and the legend lists them in that order. The most important channels get the strongest colours.
+- **Small channels are grey.** Channels whose peak is below `--legend-cutoff` (10% of the largest by default) are drawn in light grey and left out of the legend, so every coloured curve on the plot has a label.
+- **`-e` is explicit.** Channels you name with `-e` are always coloured and listed, in the order you typed them, however small they are.
+- **Never two identical entries.** With more channels than colours, colours repeat with dashed, then dotted, lines. Valyte prints a note when that happens; `-e` or `--panels` usually make a clearer figure.
+- **Panels keep colours per entity.** In `--panels`, each orbital keeps one colour in every element panel (s, p, d, f in palette order); with `--panel-by orbital`, each element does.
+
+### Custom colours
+
+Custom colours always override the palette. A key can be a series (`Fe(d)`), an element (`Fe`, all its shown channels), or an orbital (`d`). Keys are not case-sensitive for elements (`fe(D)` works), but a single lowercase `s`, `p`, `d` or `f` means the orbital, while `S` and `P` mean sulfur and phosphorus.
+
+**Inline in `-e`:**
+```bash
+valyte dos -e "Fe(d):red" "O(p):0072B2"
+```
+
+**With `-c` / `--colors`.** Mappings set single series; a plain list of colours replaces the palette. Both can be used together:
+```bash
+valyte dos -c "Fe(d)=red" "O(p)=0072B2"     # per series
+valyte dos -c red blue green               # replaces the palette
+valyte dos -c black orange "Fe(d)=red"      # both
+```
+
+**From a file (`--colors-file`)**, as a JSON object or as `key colour` lines (`#` starts a comment):
 
 **`colors.json`**:
 ```json
 {
-  "Fe(d)": "#e63946",
+  "Fe(d)": "#D55E00",
   "Fe(s)": "orange",
-  "O(p)": "#00b4d8"
+  "O(p)": "0072B2"
 }
+```
+
+**`colors.txt`**:
+```
+# series   colour
+Fe(d)      #D55E00
+O:p        0072B2
+Pb = black
 ```
 
 ```bash
 valyte dos -e "Fe(d)" "O(p)" --colors-file colors.json
 ```
 
-### Using CLI mapping (`--colors`)
-```bash
-# Mapping mode
-valyte dos -e "Fe(d)" "O(p)" --colors Fe(d)=red O(p)=blue
+When the same series is set in several places, the later one wins: `--colors-file`, then `-c`, then inline `-e` colours. Palette colours already used by a custom mapping are skipped, so an automatic colour never duplicates one you picked.
 
-# Ordered list mode
-valyte dos -e "Fe(d)" "O(p)" --colors red blue
-```
+Colours can be any Matplotlib colour: names (`red`), hex with or without `#` (`#0072B2`, `0072B2`), or prefixed names (`tab:blue`, `xkcd:sky blue`). An invalid colour, an unknown palette or a missing colours file stops with a short error message. Keys that match no plotted series are reported with the list of valid ones.
 
 ---
 
@@ -93,8 +136,11 @@ valyte dos -e Fe O
 # Specific orbitals with custom colors file
 valyte dos -e "Fe(d)" "O(p)" --colors-file colors.json
 
-# Inline custom colors with hex codes
-valyte dos -e Fe(d):e63946 O(p):2a9d8f
+# Inline custom colours with hex codes
+valyte dos -e Fe(d):D55E00 O(p):0072B2
+
+# Another palette
+valyte dos --palette muted
 
 # Custom path, energy range, Fermi line, output
 valyte dos ./vasp_run --xlim -5 5 --fermi -o my_dos.png
@@ -163,7 +209,7 @@ A plain-text, whitespace-delimited file with one row per energy point:
 ## Smart features
 
 **Adaptive legend**
-:   If the maximum PDOS contribution across all plotted species is below the `--legend-cutoff` threshold (default 10% of the total DOS peak), the legend is automatically hidden to avoid cluttering a flat plot. See [FAQ → Legend is not showing](faq.md#legend-is-not-showing) if you need to adjust this.
+:   Only channels that matter get a colour and a legend entry; the rest are drawn in grey, and the legend lists channels from largest to smallest. See [Colours](#colours) for the exact rules and [FAQ → A channel is grey or missing from the legend](faq.md#a-channel-is-grey-or-missing-from-the-legend).
 
 **Gradient fill**
 :   Peaks are filled with a smooth gradient tied to the line color, giving plots a clean publication aesthetic.

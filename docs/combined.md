@@ -19,10 +19,13 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 |---|---|---|
 | `--dos` | same as band | Path to `vasprun.xml` or directory for DOS data (if different from band structure) |
 | `-e`, `--elements` | all | Elements/orbitals to plot in the DOS panel |
+| `--colors-file` | none | Path to JSON or text file mapping elements/orbitals to colours |
+| `-c`, `--colors` | none | Custom colours: per series (`Fe(d)=red O(p)=0072B2`) and/or a plain list that replaces the palette (`red blue`) |
+| `--palette` | `wong` | Colour palette for the projected DOS: `wong`, `bright` or `muted` (see [Colours](dos.md#colours)) |
 | `--ylim` | `-4 4` | Shared energy range in eV (shared Y-axis limits) |
 | `--scale` | `1.0` | Divide all DOS values by this factor (zoom in on small features) |
 | `--fermi` | off | Draw a dashed horizontal line at the Fermi level (E = 0) |
-| `--legend-cutoff` | `0.10` | Hide the legend if the max PDOS contribution is below this fraction of total |
+| `--legend-cutoff` | `0.10` | Channels whose peak is below this fraction of the largest are drawn grey and left out of the legend. Channels named with `-e` are always shown |
 | `-o`, `--output` | `valyte_combined.png` | Output filename |
 | `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--width` | `3.2` | Plot width in inches |

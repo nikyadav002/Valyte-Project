@@ -20,7 +20,11 @@ from valyte.band_plot import (
     plot_orbital_band_structure,
     plot_spin_texture_band_structure,
 )
-from valyte.dos_plot import load_dos, plot_dos, plot_dos_panels, load_color_file
+from valyte.dos_plot import load_dos, plot_dos, plot_dos_panels
+from valyte.colors import (PALETTE_NAMES, DEFAULT_PALETTE, load_color_file,
+                           normalize_color, normalize_mapping)
+from matplotlib.colors import is_color_like
+from pymatgen.core.periodic_table import Element
 from valyte.combined_plot import plot_combined
 from valyte.kpoints import generate_kpoints, generate_kpoints_interactive
 from valyte.potcar import generate_potcar, parse_potcar_overrides
@@ -49,77 +53,103 @@ def _normalize_element(symbol: str) -> str:
     return symbol[0].upper() + symbol[1:].lower()
 
 
+_SELECTION = re.compile(
+    r"^([A-Za-z]{1,3})"                                  # element
+    r"(?:\(\s*([spdfSPDF])\s*\)|:([spdfSPDF])(?=$|[:=]))?"  # (orb) or :orb
+    r"(?:[:=](.+))?$"                                    # optional :colour or =colour
+)
+
+
 def parse_element_selection(inputs):
-    """Parse element/orbital selections like "Fe", "Fe(d)", "O(p)", or with inline colors like "Fe(d):red"."""
+    """Parse -e selections: "Fe", "Fe(d)", "Fe:d", optionally with a colour
+    ("Fe(d):red", "Fe:d=#0072B2", "O=0072B2").
+
+    Returns (elements_to_load, plotting_config, inline_colors). Raises
+    ValueError for anything that is not an element symbol, so a typo is
+    reported instead of silently dropped.
+    """
     if not inputs:
         return None, None, {}
 
     elements_to_load = []
-    elements_seen = set()
     plotting_config = []
     inline_colors = {}
 
-    pattern = re.compile(r"^([A-Za-z]+)(?:\(([spdf])\))?(?:[:=]([^\s]+))?$", re.IGNORECASE)
-
     for item in inputs:
-        match = pattern.match(item.strip())
-        if not match:
-            print(f"Warning: could not parse '{item}'. Ignoring.")
-            continue
+        match = _SELECTION.match(item.strip())
+        el = _normalize_element(match.group(1)) if match else None
+        if not match or not Element.is_valid_symbol(el):
+            raise ValueError(
+                f"Could not read -e entry {item!r}. Use an element (Fe), an element "
+                "and orbital (Fe(d) or Fe:d), optionally with a colour (Fe(d):red).")
 
-        el = _normalize_element(match.group(1))
-        orb = match.group(2).lower() if match.group(2) else None
-        color = match.group(3)
+        orb = (match.group(2) or match.group(3) or "").lower() or None
+        color = match.group(4)
 
-        if el not in elements_seen:
+        if el not in elements_to_load:
             elements_to_load.append(el)
-            elements_seen.add(el)
 
         orb_str = orb or "total"
-        plotting_config.append((el, orb_str))
+        if (el, orb_str) not in plotting_config:
+            plotting_config.append((el, orb_str))
 
         if color:
             label = el if orb_str == "total" else f"{el}({orb_str})"
-            if re.match(r"^[0-9a-fA-F]{3,6}$", color):
-                color = "#" + color
-            inline_colors[label] = color
+            inline_colors[label] = normalize_color(color, f"colour for {item!r}")
 
     return elements_to_load, plotting_config, inline_colors
 
 
-def _build_colors_map(colors_file, colors_args, inline_colors):
-    colors_map = {}
-    if colors_file:
-        colors_map.update(load_color_file(colors_file))
+def _build_colors(colors_file, colors_args, inline_colors):
+    """Combine --colors-file, -c/--colors and inline -e colours.
 
-    if colors_args:
-        positional = []
-        for item in colors_args:
-            if "=" in item:
-                k, v = item.split("=", 1)
-                v = v.strip()
-                if re.match(r"^[0-9a-fA-F]{3,6}$", v):
-                    v = "#" + v
-                colors_map[k.strip()] = v
-            elif ":" in item:
-                k, v = item.split(":", 1)
-                v = v.strip()
-                if re.match(r"^[0-9a-fA-F]{3,6}$", v):
-                    v = "#" + v
-                colors_map[k.strip()] = v
-            else:
-                v = item.strip()
-                if re.match(r"^[0-9a-fA-F]{3,6}$", v):
-                    v = "#" + v
-                positional.append(v)
-        if positional and not colors_map:
-            colors_map = positional
+    Returns (mapping, palette): mapping is {series: colour} or None; palette is
+    the list of plain colours given to -c (which replaces the palette) or None.
+    Later sources win: file, then -c mappings, then inline -e colours.
+    """
+    mapping = dict(load_color_file(colors_file)) if colors_file else {}
+    positional = []
+    for item in colors_args or []:
+        item = item.strip()
+        if "=" in item:
+            key, value = item.split("=", 1)
+        elif is_color_like(item) or is_color_like("#" + item):
+            positional.append(normalize_color(item))
+            continue
+        elif ":" in item:
+            key, value = item.rsplit(":", 1)
+        else:
+            raise ValueError(
+                f"Could not read -c entry {item!r}: not a colour, and not a "
+                "mapping like Fe(d)=red.")
+        mapping[key] = value
+    mapping.update(inline_colors or {})
+    return (normalize_mapping(mapping) or None), (positional or None)
 
-    if inline_colors:
-        if isinstance(colors_map, dict):
-            colors_map.update(inline_colors)
 
-    return colors_map or None
+def _fraction(text):
+    """argparse type for values between 0 and 1."""
+    value = float(text)
+    if not 0 <= value <= 1:
+        raise argparse.ArgumentTypeError(f"must be between 0 and 1, got {text}")
+    return value
+
+
+def _dos_colour_args(args):
+    """Parse -e, -c, --colors-file and --palette for dos/combined.
+
+    Returns (elements, plotting_config, colors, palette). Errors in any of
+    them are reported as a single "Error:" line and exit, never a traceback.
+    """
+    try:
+        elements, plotting_config, inline_colors = parse_element_selection(args.elements)
+        colors, custom_palette = _build_colors(args.colors_file, args.colors, inline_colors)
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+    if custom_palette and args.palette:
+        print(f"Note: the colours given to -c replace --palette {args.palette}.")
+    return elements, plotting_config, colors, custom_palette or args.palette or DEFAULT_PALETTE
 
 
 def main():
@@ -139,7 +169,7 @@ def main():
     dos_parser.add_argument("--scale", type=float, default=1.0, help="Scaling factor for Y-axis (zoom in)")
     dos_parser.add_argument("--fermi", action="store_true", help="Draw dashed line at Fermi level (E=0)")
     dos_parser.add_argument("--pdos", action="store_true", help="Plot only Projected DOS (hide Total DOS)")
-    dos_parser.add_argument("--legend-cutoff", type=float, default=0.10, help="Threshold for legend visibility (0.0-1.0)")
+    dos_parser.add_argument("--legend-cutoff", type=_fraction, default=0.10, help="Smallest peak, as a fraction of the largest, that gets a colour and a legend entry; smaller channels are drawn grey (0.0-1.0, default 0.10). Ignored for channels named with -e")
     dos_parser.add_argument("--font", default="Arial", help="Font family")
     dos_parser.add_argument("--width", type=float, default=4.45, help="Plot width in inches (default: 4.45)")
     dos_parser.add_argument("--height", type=float, default=4.2, help="Plot height in inches (default: 4.2)")
@@ -153,7 +183,8 @@ def main():
     dos_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
     dos_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
     dos_parser.add_argument("--colors-file", help="Path to JSON or text file mapping elements/orbitals to colors")
-    dos_parser.add_argument("-c", "--colors", nargs="+", help="Custom colors mapping or list (e.g., 'Fe(d)=red O(p)=blue' or 'red blue')")
+    dos_parser.add_argument("-c", "--colors", nargs="+", help="Custom colours: per series (Fe(d)=red O(p)=0072B2) and/or a plain list that replaces the palette (red blue)")
+    dos_parser.add_argument("--palette", choices=PALETTE_NAMES, default=None, help="Colour palette for the projected DOS: wong (default; colour-blind safe), bright, or muted. -c/--colors and --colors-file override single series")
 
 
     # Supercell
@@ -299,7 +330,7 @@ def main():
     combined_parser.add_argument("--ylim", nargs=2, type=float, default=[-4, 4], help="Energy range (min max)")
     combined_parser.add_argument("--scale", type=float, default=1.0, help="Scaling factor for DOS axis")
     combined_parser.add_argument("--fermi", action="store_true", help="Draw dashed horizontal line at Fermi level (E=0)")
-    combined_parser.add_argument("--legend-cutoff", type=float, default=0.10, help="Threshold for legend visibility (0.0-1.0)")
+    combined_parser.add_argument("--legend-cutoff", type=_fraction, default=0.10, help="Smallest peak, as a fraction of the largest, that gets a colour and a legend entry; smaller channels are drawn grey (0.0-1.0, default 0.10). Ignored for channels named with -e")
     combined_parser.add_argument("--font", default="Arial", help="Font family")
     combined_parser.add_argument("--width", type=float, default=3.2, help="Plot width in inches (default: 3.2)")
     combined_parser.add_argument("--height", type=float, default=3.2, help="Plot height in inches (default: 3.2)")
@@ -310,7 +341,8 @@ def main():
     combined_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
     combined_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
     combined_parser.add_argument("--colors-file", help="Path to JSON or text file mapping elements/orbitals to colors")
-    combined_parser.add_argument("-c", "--colors", nargs="+", help="Custom colors mapping or list (e.g., 'Fe(d)=red O(p)=blue' or 'red blue')")
+    combined_parser.add_argument("-c", "--colors", nargs="+", help="Custom colours: per series (Fe(d)=red O(p)=0072B2) and/or a plain list that replaces the palette (red blue)")
+    combined_parser.add_argument("--palette", choices=PALETTE_NAMES, default=None, help="Colour palette for the projected DOS: wong (default; colour-blind safe), bright, or muted. -c/--colors and --colors-file override single series")
 
 
     args = parser.parse_args()
@@ -320,8 +352,7 @@ def main():
         if not target_path:
             target_path = "."
 
-        elements, plotting_config, inline_colors = parse_element_selection(args.elements)
-        colors_map = _build_colors_map(args.colors_file, args.colors, inline_colors)
+        elements, plotting_config, colors_map, palette = _dos_colour_args(args)
 
         try:
             dos_data, pdos_data = load_dos(target_path, elements)
@@ -346,7 +377,7 @@ def main():
                     bold=not args.no_bold,
                     dpi=args.dpi,
                     colors=colors_map,
-                
+                    palette=palette,
                     fontsize=args.fontsize,
                 )
             else:
@@ -367,7 +398,7 @@ def main():
                     bold=not args.no_bold,
                     dpi=args.dpi,
                     colors=colors_map,
-                
+                    palette=palette,
                     fontsize=args.fontsize,
                 )
         except Exception as e:
@@ -501,8 +532,7 @@ def main():
         if not target_path:
             target_path = "."
 
-        elements, plotting_config, inline_colors = parse_element_selection(args.elements)
-        colors_map = _build_colors_map(args.colors_file, args.colors, inline_colors)
+        elements, plotting_config, colors_map, palette = _dos_colour_args(args)
 
         if os.path.isdir(target_path):
             vasprun_file = os.path.join(target_path, "vasprun.xml")
@@ -535,7 +565,7 @@ def main():
                 bold=not args.no_bold,
                 dpi=args.dpi,
                 colors=colors_map,
-            
+                palette=palette,
                 fontsize=args.fontsize,
             )
 

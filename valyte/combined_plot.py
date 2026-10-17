@@ -16,7 +16,8 @@ from pymatgen.io.vasp import BSVasprun, Vasprun
 from pymatgen.electronic_structure.plotter import BSPlotter
 from pymatgen.electronic_structure.core import Spin
 
-from valyte.dos_plot import load_dos, resolve_color
+from valyte.dos_plot import load_dos, _collect_series, warn_missing_selection
+from valyte.colors import assign_styles
 from valyte.style import apply_style, get_font_weight, save_plot, font_scale
 
 
@@ -102,8 +103,14 @@ def plot_combined(
     bold=True,
     colors=None,
     fontsize=None,
+    palette=None,
 ):
-    """Plot combined Band Structure and DOS side-by-side."""
+    """Plot combined Band Structure and DOS side-by-side.
+
+    DOS colours follow the same rules as `valyte.dos_plot.plot_dos`: `palette`
+    picks the palette ('wong', 'bright', 'muted' or a list of colours) and
+    `colors` maps individual series.
+    """
     if os.path.isdir(vasprun_path):
         vasprun_path = os.path.join(vasprun_path, "vasprun.xml")
 
@@ -157,6 +164,9 @@ def plot_combined(
         dos_data, pdos_data = load_dos(dos_path, elements, efermi=zero_energy)
 
     # Resolve items to plot in DOS (orbital resolved by default)
+    user_selected = bool(plotting_config)
+    if user_selected:
+        warn_missing_selection(pdos_data, plotting_config)
     if not plotting_config:
         plotting_config = []
         for el in sorted(pdos_data.keys()):
@@ -245,70 +255,34 @@ def plot_combined(
     # 2. Plot DOS
     is_spin_polarized = Spin.down in dos_data.densities
 
-    palette = [
-        "#e63946", "#457b9d", "#2a9d8f", "#f4a261", "#6a4c93",
-        "#8ac926", "#1982c4", "#ca6702", "#ff595e", "#6a994e",
-        "#b5179e", "#219ebc", "#9b2226", "#606c38", "#0077b6",
-        "#bb3e03", "#005f73", "#ee9b00", "#7209b7", "#94d2bd",
-    ]
-
     dos_x_mask = (dos_data.energies >= ylim[0]) & (dos_data.energies <= ylim[1])
 
-    max_visible_dos = 0
+    series = _collect_series(dos_data, pdos_data, plotting_config, dos_x_mask,
+                             is_spin_polarized)
+    styles = assign_styles(series, palette=palette, colors=colors,
+                           cutoff=legend_cutoff, explicit=user_selected)
+
+    max_visible_dos = max((s["y_up"][dos_x_mask].max(initial=0.0) for s in series), default=0.0)
     min_visible_dos = 0
-    dos_lines = []
+    if is_spin_polarized:
+        min_visible_dos = min((s["y_down"][dos_x_mask].min(initial=0.0) for s in series),
+                              default=0.0)
 
-    for i, (el, orb) in enumerate(plotting_config):
-        if el not in pdos_data:
-            continue
-
-        label = el if orb == "total" else f"{el}({orb})"
-        c = resolve_color(label, el, orb, i, colors, palette)
-
-
-        if orb == "total":
-            y_up = np.zeros_like(dos_data.energies)
-            y_down = np.zeros_like(dos_data.energies)
-            for o_data in pdos_data[el].values():
-                y_up += o_data.get(Spin.up, np.zeros_like(dos_data.energies))
-                y_down += o_data.get(Spin.down, np.zeros_like(dos_data.energies))
-            label = el
-        else:
-            if orb not in pdos_data[el]:
-                continue
-            y_up = pdos_data[el][orb].get(Spin.up, np.zeros_like(dos_data.energies))
-            y_down = pdos_data[el][orb].get(Spin.down, np.zeros_like(dos_data.energies))
-            label = f"{el}({orb})"
-
-        y_down = -y_down
-
-        visible_y_up = y_up[dos_x_mask]
-        visible_y_down = y_down[dos_x_mask]
-
-        current_max_dos = 0
-        if len(visible_y_up) > 0:
-            max_y = np.max(visible_y_up)
-            max_visible_dos = max(max_visible_dos, max_y)
-            current_max_dos = max(current_max_dos, max_y)
-
-        if is_spin_polarized and len(visible_y_down) > 0:
-            min_y = np.min(visible_y_down)
-            min_visible_dos = min(min_visible_dos, min_y)
-            current_max_dos = max(current_max_dos, abs(min_y))
-
-        # We plot with DOS values on X-axis, Energies on Y-axis
-        line = ax_dos.plot(y_up, dos_data.energies, lw=1.5, color=c, alpha=0)[0]
-        gradient_fill_rotated(y_up, dos_data.energies, ax=ax_dos, color=c, alpha=0.9)
+    # Grey background series first, then legend series largest-first.
+    order = sorted(range(len(series)),
+                   key=lambda i: (styles[i]["rank"] is not None, styles[i]["rank"] or 0))
+    legend_items = []
+    for i in order:
+        s, st = series[i], styles[i]
+        # DOS values on the x-axis, energies on the y-axis
+        line = gradient_fill_rotated(s["y_up"], dos_data.energies, ax=ax_dos,
+                                     color=st["color"], alpha=0.9, ls=st["ls"])
         if is_spin_polarized:
-            gradient_fill_rotated(y_down, dos_data.energies, ax=ax_dos, color=c, alpha=0.9)
-
-        dos_lines.append(
-            {
-                "line": line,
-                "label": label,
-                "max_dos": current_max_dos,
-            }
-        )
+            gradient_fill_rotated(s["y_down"], dos_data.energies, ax=ax_dos,
+                                  color=st["color"], alpha=0.9, ls=st["ls"])
+        if st["legend"] and line is not None:
+            legend_items.append((st["rank"], line, s["label"]))
+    legend_items.sort(key=lambda t: t[0])
 
     # Set limits and ticks for DOS plot
     global_max_dos = max(max_visible_dos, abs(min_visible_dos))
@@ -330,15 +304,8 @@ def plot_combined(
     ax_dos.set_xlabel("")
 
     # Render Legend
-    threshold = legend_cutoff * global_max_dos
-    legend_handles = []
-    legend_labels = []
-
-    for item in dos_lines:
-        if item["max_dos"] >= threshold:
-            item["line"].set_alpha(1.0)
-            legend_handles.append(item["line"])
-            legend_labels.append(item["label"])
+    legend_handles = [t[1] for t in legend_items]
+    legend_labels = [t[2] for t in legend_items]
 
     if legend_handles:
         legend = ax_dos.legend(

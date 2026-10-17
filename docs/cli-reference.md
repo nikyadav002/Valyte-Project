@@ -236,13 +236,14 @@ valyte dos [path/to/vasprun.xml] [options]
 |---|---|---|
 | `-e`, `--elements` | all | Elements/orbitals to plot (e.g. `Fe`, `Fe(d)`, `Fe(d):red`, `O(p):#2a9d8f`) |
 | `--colors-file` | none | Path to JSON or text file mapping elements/orbitals to colors |
-| `-c`, `--colors` | none | Custom colors mapping or list (`Fe(d)=red O(p)=blue` or `red blue`) |
+| `-c`, `--colors` | none | Custom colours: per series (`Fe(d)=red O(p)=0072B2`) and/or a plain list that replaces the palette (`red blue`) |
+| `--palette` | `wong` | Colour palette for the projected DOS: `wong`, `bright` or `muted` (see [Colours](dos.md#colours)) |
 | `--xlim` | `-6 6` | Energy range in eV |
 | `--ylim` | auto | DOS range |
 | `--scale` | `1.0` | Divide DOS values by this factor |
 | `--fermi` | off | Draw dashed line at E = 0 |
 | `--pdos` | off | Show only projected DOS (hide total) |
-| `--legend-cutoff` | `0.10` | Hide legend if max PDOS fraction < threshold |
+| `--legend-cutoff` | `0.10` | Channels whose peak is below this fraction of the largest are drawn grey and left out of the legend. Channels named with `-e` are always shown |
 | `-o`, `--output` | `valyte_dos.png` | Output filename |
 | `--font` | `Arial` | Font family |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
@@ -252,7 +253,7 @@ valyte dos [path/to/vasprun.xml] [options]
 | `--panel-by` | `element` | Grouping for panels: `element` or `orbital` |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
 
-Element/orbital formats: `Fe` (element total), `Fe(d)` or `Fe:d` (specific orbital), `-e Fe O` (multiple elements), `Fe(d):e63946` (inline color/hex).
+Element/orbital formats: `Fe` (element total), `Fe(d)` or `Fe:d` (specific orbital), `-e Fe O` (multiple elements), `Fe(d):D55E00` (inline colour/hex).
 
 **Examples:**
 
@@ -260,7 +261,8 @@ Element/orbital formats: `Fe` (element total), `Fe(d)` or `Fe:d` (specific orbit
 valyte dos
 valyte dos -e Fe O
 valyte dos -e "Fe(d)" "O(p)" --colors-file colors.json
-valyte dos -e Fe(d):e63946 O(p):2a9d8f
+valyte dos -e Fe(d):D55E00 O(p):0072B2
+valyte dos --palette bright
 valyte dos ./run --xlim -5 5 --fermi -o my_dos.png
 valyte dos -e Fe O --format svg
 valyte dos -e Fe O --save-data
@@ -397,12 +399,13 @@ valyte combined [path] [options]
 | `--dos` | same as band | Path to `vasprun.xml` or directory for DOS data (if different from band structure) |
 | `-e`, `--elements` | all | Elements/orbitals to plot in the DOS panel |
 | `--colors-file` | none | Path to JSON or text file mapping elements/orbitals to colors |
-| `-c`, `--colors` | none | Custom colors mapping or list (`Fe(d)=red O(p)=blue` or `red blue`) |
+| `-c`, `--colors` | none | Custom colours: per series (`Fe(d)=red O(p)=0072B2`) and/or a plain list that replaces the palette (`red blue`) |
+| `--palette` | `wong` | Colour palette for the projected DOS: `wong`, `bright` or `muted` (see [Colours](dos.md#colours)) |
 | `-o`, `--output` | `valyte_combined.png` | Output plot filename |
 | `--ylim` | `-4 4` | Shared energy range in eV |
 | `--scale` | `1.0` | Scaling factor for the DOS axis |
 | `--fermi` | off | Draw dashed horizontal line at the Fermi level (E = 0) |
-| `--legend-cutoff` | `0.10` | Hide legend if max PDOS contribution is below this fraction of total |
+| `--legend-cutoff` | `0.10` | Channels whose peak is below this fraction of the largest are drawn grey and left out of the legend. Channels named with `-e` are always shown |
 | `--font` | `Arial` | Font family |
 | `--width` | `3.2` | Plot width in inches |
 | `--height` | `3.2` | Plot height in inches |
@@ -419,6 +422,7 @@ valyte combined
 valyte combined -e Fe O --ylim -3 3
 valyte combined -e "Fe(d)" "O(p)" --colors-file colors.json
 valyte combined --fermi --no-bold
+valyte combined --palette muted
 valyte combined --save-data --format pdf
 ```
 
