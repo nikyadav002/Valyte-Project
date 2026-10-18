@@ -21,7 +21,7 @@ from valyte.band_plot import (
     plot_spin_texture_band_structure,
 )
 from valyte.dos_plot import load_dos, plot_dos, plot_dos_panels
-from valyte.colors import (PALETTE_NAMES, DEFAULT_PALETTE, load_color_file,
+from valyte.colors import (PALETTE_NAMES, load_color_file,
                            normalize_color, normalize_mapping)
 from matplotlib.colors import is_color_like
 from pymatgen.core.periodic_table import Element
@@ -33,6 +33,7 @@ from valyte.effmass import compute_effective_masses, print_results, save_results
 from valyte.effmass_plot import plot_effective_mass
 from valyte.converge import run_converge
 from valyte.bandgap import get_bandgap
+from valyte.style import STYLE_NAMES
 
 # seekpath still reads spglib datasets as dicts, which spglib >= 2.5 deprecates.
 # spglib registers its own filter for this on import, so ours must come after
@@ -149,7 +150,8 @@ def _dos_colour_args(args):
         sys.exit(1)
     if custom_palette and args.palette:
         print(f"Note: the colours given to -c replace --palette {args.palette}.")
-    return elements, plotting_config, colors, custom_palette or args.palette or DEFAULT_PALETTE
+    # None lets the plot use the style's own palette (wong for the default style)
+    return elements, plotting_config, colors, custom_palette or args.palette
 
 
 def main():
@@ -170,7 +172,7 @@ def main():
     dos_parser.add_argument("--fermi", action="store_true", help="Draw dashed line at Fermi level (E=0)")
     dos_parser.add_argument("--pdos", action="store_true", help="Plot only Projected DOS (hide Total DOS)")
     dos_parser.add_argument("--legend-cutoff", type=_fraction, default=0.10, help="Smallest peak, as a fraction of the largest, that gets a colour and a legend entry; smaller channels are drawn grey (0.0-1.0, default 0.10). Ignored for channels named with -e")
-    dos_parser.add_argument("--font", default="Arial", help="Font family")
+    dos_parser.add_argument("--font", default=None, help="Font family (default: Arial, or the style's own font)")
     dos_parser.add_argument("--width", type=float, default=4.45, help="Plot width in inches (default: 4.45)")
     dos_parser.add_argument("--height", type=float, default=4.2, help="Plot height in inches (default: 4.2)")
     dos_parser.add_argument("--save-data", action="store_true", help="Also save DOS data as a .dat named after -o")
@@ -182,9 +184,10 @@ def main():
     dos_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
     dos_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
     dos_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
+    dos_parser.add_argument("--style", choices=STYLE_NAMES, default="default", help="Plot style: default, xkcd (hand-drawn), legacy (classic boxed axes, outward ticks), lines (no DOS fills), dark (for dark slides), neon (glowing lines on dark), grid (light grid lines)")
     dos_parser.add_argument("--colors-file", help="Path to JSON or text file mapping elements/orbitals to colors")
     dos_parser.add_argument("-c", "--colors", nargs="+", help="Custom colours: per series (Fe(d)=red O(p)=0072B2) and/or a plain list that replaces the palette (red blue)")
-    dos_parser.add_argument("--palette", choices=PALETTE_NAMES, default=None, help="Colour palette for the projected DOS: wong (default; colour-blind safe), bright, or muted. -c/--colors and --colors-file override single series")
+    dos_parser.add_argument("--palette", choices=PALETTE_NAMES, default=None, help="Colour palette for the projected DOS: wong (colour-blind safe), bright, or muted. Default: the style's own palette (wong for --style default and lines). -c/--colors and --colors-file override single series")
 
 
     # Supercell
@@ -204,7 +207,7 @@ def main():
     band_parser.add_argument("--kpoints", help="Path to KPOINTS file (for labels)")
     band_parser.add_argument("-o", "--output", default="valyte_band.png", help="Output filename")
     band_parser.add_argument("--ylim", nargs=2, type=float, help="Energy range (min max)")
-    band_parser.add_argument("--font", default="Arial", help="Font family")
+    band_parser.add_argument("--font", default=None, help="Font family (default: Arial, or the style's own font)")
     band_parser.add_argument(
         "--tricolor", nargs=3, metavar=("SPEC1", "SPEC2", "SPEC3"),
         help="Enable tricolor orbital-resolved mode with 3 orbital/element specs. "
@@ -241,6 +244,7 @@ def main():
     band_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
     band_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
     band_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
+    band_parser.add_argument("--style", choices=STYLE_NAMES, default="default", help="Plot style: default, xkcd (hand-drawn), legacy (classic boxed axes, outward ticks), dark (for dark slides), neon (glowing lines on dark), grid (light grid lines). lines only changes DOS plots")
 
     # Band KPOINTS generation
     kpt_gen_parser = band_subparsers.add_parser("kpt-gen", help="Generate KPOINTS for band structure")
@@ -293,6 +297,7 @@ def main():
     bz_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
     bz_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
     bz_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
+    bz_parser.add_argument("--style", choices=STYLE_NAMES, default="default", help="Plot style: default, xkcd (hand-drawn), legacy (classic boxed axes, outward ticks), dark (for dark slides), neon (glowing lines on dark), grid (light grid lines). lines only changes DOS plots")
 
     # Convergence monitor
     conv_parser = subparsers.add_parser("converge", help="Monitor VASP structural relaxation convergence")
@@ -310,10 +315,11 @@ def main():
     effmass_parser.add_argument("--save-data", action="store_true", help="Save results as a .dat named after -o (default: valyte_effmass.dat)")
     effmass_parser.add_argument("--tol", type=float, default=1e-3, help="Degeneracy tolerance in eV (default: 1e-3)")
     effmass_parser.add_argument("--format", choices=["png", "pdf", "svg"], help="Output figure format")
-    effmass_parser.add_argument("--font", default="Arial", help="Font family")
+    effmass_parser.add_argument("--font", default=None, help="Font family (default: Arial, or the style's own font)")
     effmass_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
     effmass_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
     effmass_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
+    effmass_parser.add_argument("--style", choices=STYLE_NAMES, default="default", help="Plot style: default, xkcd (hand-drawn), legacy (classic boxed axes, outward ticks), dark (for dark slides), neon (glowing lines on dark), grid (light grid lines). lines only changes DOS plots")
 
     # Bandgap
     bandgap_parser = subparsers.add_parser("bandgap", help="Print electronic bandgap")
@@ -331,7 +337,7 @@ def main():
     combined_parser.add_argument("--scale", type=float, default=1.0, help="Scaling factor for DOS axis")
     combined_parser.add_argument("--fermi", action="store_true", help="Draw dashed horizontal line at Fermi level (E=0)")
     combined_parser.add_argument("--legend-cutoff", type=_fraction, default=0.10, help="Smallest peak, as a fraction of the largest, that gets a colour and a legend entry; smaller channels are drawn grey (0.0-1.0, default 0.10). Ignored for channels named with -e")
-    combined_parser.add_argument("--font", default="Arial", help="Font family")
+    combined_parser.add_argument("--font", default=None, help="Font family (default: Arial, or the style's own font)")
     combined_parser.add_argument("--width", type=float, default=3.2, help="Plot width in inches (default: 3.2)")
     combined_parser.add_argument("--height", type=float, default=3.2, help="Plot height in inches (default: 3.2)")
     combined_parser.add_argument("--save-data", action="store_true", help="Save band and DOS data to text files")
@@ -340,9 +346,10 @@ def main():
     combined_parser.add_argument("--no-bold", action="store_true", help="Use normal font weight and thinner lines/ticks")
     combined_parser.add_argument("--dpi", type=int, default=400, help="Output figure resolution DPI (default: 400)")
     combined_parser.add_argument("--fontsize", type=float, default=None, help="Base font size in points; all labels scale with it")
+    combined_parser.add_argument("--style", choices=STYLE_NAMES, default="default", help="Plot style: default, xkcd (hand-drawn), legacy (classic boxed axes, outward ticks), lines (no DOS fills), dark (for dark slides), neon (glowing lines on dark), grid (light grid lines)")
     combined_parser.add_argument("--colors-file", help="Path to JSON or text file mapping elements/orbitals to colors")
     combined_parser.add_argument("-c", "--colors", nargs="+", help="Custom colours: per series (Fe(d)=red O(p)=0072B2) and/or a plain list that replaces the palette (red blue)")
-    combined_parser.add_argument("--palette", choices=PALETTE_NAMES, default=None, help="Colour palette for the projected DOS: wong (default; colour-blind safe), bright, or muted. -c/--colors and --colors-file override single series")
+    combined_parser.add_argument("--palette", choices=PALETTE_NAMES, default=None, help="Colour palette for the projected DOS: wong (colour-blind safe), bright, or muted. Default: the style's own palette (wong for --style default and lines). -c/--colors and --colors-file override single series")
 
 
     args = parser.parse_args()
@@ -379,6 +386,7 @@ def main():
                     colors=colors_map,
                     palette=palette,
                     fontsize=args.fontsize,
+                    style=args.style,
                 )
             else:
                 plot_dos(
@@ -400,6 +408,7 @@ def main():
                     colors=colors_map,
                     palette=palette,
                     fontsize=args.fontsize,
+                    style=args.style,
                 )
         except Exception as e:
             print(f"Error: {e}")
@@ -482,7 +491,8 @@ def main():
             if args.plot:
                 plot_effective_mass(results, output=_apply_format(args.output, args.format), dpi=args.dpi,
                                     font=args.font,
-                                    bold=not args.no_bold, fontsize=args.fontsize)
+                                    bold=not args.no_bold, fontsize=args.fontsize,
+                                    style=args.style)
 
             if args.save_data:
                 save_results_dat(results, os.path.splitext(args.output)[0] + ".dat")
@@ -502,6 +512,7 @@ def main():
                 bold=not args.no_bold,
                 fontsize=args.fontsize,
                 font=args.font,
+                style=args.style,
                 elev=args.elev,
                 azim=args.azim,
             )
@@ -567,6 +578,7 @@ def main():
                 colors=colors_map,
                 palette=palette,
                 fontsize=args.fontsize,
+                style=args.style,
             )
 
         except Exception:
@@ -615,8 +627,8 @@ def main():
                         cmap=args.spin_cmap,
                         bold=not args.no_bold,
                         dpi=args.dpi,
-                    
                         fontsize=args.fontsize,
+                        style=args.style,
                     )
                 elif args.tricolor:
                     tri_labels = args.tri_labels if args.tri_labels else list(args.tricolor)
@@ -635,8 +647,8 @@ def main():
                         save_data=args.save_data,
                         bold=not args.no_bold,
                         dpi=args.dpi,
-                    
                         fontsize=args.fontsize,
+                        style=args.style,
                     )
                 else:
                     plot_band_structure(
@@ -650,8 +662,8 @@ def main():
                         spin_resolved=args.spin_resolved,
                         bold=not args.no_bold,
                         dpi=args.dpi,
-                    
                         fontsize=args.fontsize,
+                        style=args.style,
                     )
             except Exception:
                 import traceback

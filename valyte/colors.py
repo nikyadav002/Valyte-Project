@@ -159,7 +159,7 @@ def load_color_file(filepath):
 
 
 def assign_styles(series, palette=None, colors=None, cutoff=0.10, explicit=False,
-                  warn=print):
+                  warn=print, minor_color=None):
     """Decide colour, line style and legend membership for each DOS series.
 
     Parameters
@@ -180,6 +180,8 @@ def assign_styles(series, palette=None, colors=None, cutoff=0.10, explicit=False
     explicit : bool
         True when the user chose the series (e.g. with -e): every visible
         series is shown, in the given order, whatever its size.
+    minor_color : str, optional
+        Colour for series left out of the legend (default MINOR_COLOR).
 
     Returns
     -------
@@ -216,7 +218,8 @@ def assign_styles(series, palette=None, colors=None, cutoff=0.10, explicit=False
     claimed = {to_hex(mapping[k]).lower() for k in used_keys}
     free = [c for c in colours if to_hex(c).lower() not in claimed] or colours
 
-    styles = [{"color": MINOR_COLOR, "ls": "-", "legend": False, "rank": None}
+    grey = minor_color or MINOR_COLOR
+    styles = [{"color": grey, "ls": "-", "legend": False, "rank": None}
               for _ in series]
     slot_of_key = {}
     for rank, i in enumerate(shown):

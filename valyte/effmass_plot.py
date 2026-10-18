@@ -3,12 +3,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from valyte.style import apply_style, get_font_weight, save_plot, font_scale
+from valyte.style import active_style, apply_style, get_font_weight, save_plot, font_scale
 
 
 def plot_effective_mass(results, output="valyte_effmass.png",
-                        figsize=(8, 4), dpi=400, font="Arial", bold=True,
+                        figsize=(8, 4), dpi=400, font=None, bold=True,
     fontsize=None,
+    style=None,
 ):
     """Plot parabolic fits overlaid on band data near VBM and CBM.
 
@@ -38,10 +39,12 @@ def plot_effective_mass(results, output="valyte_effmass.png",
         print("No effective mass fits to plot.")
         return
 
-    _weight = get_font_weight(bold)
     _fsbase = fontsize if fontsize is not None else 14
     _fscale = font_scale(fontsize, 14)
-    apply_style(font=font, bold=bold, fontsize=_fsbase, linewidth=1.4 if bold else 0.8)
+    st = apply_style(font=font, bold=bold, fontsize=_fsbase,
+                     linewidth=1.4 if bold else 0.8, style=style)
+    bold = bold and st.bold
+    _weight = get_font_weight(bold)
 
     has_holes = len(hole_masses) > 0
     has_electrons = len(electron_masses) > 0
@@ -56,8 +59,8 @@ def plot_effective_mass(results, output="valyte_effmass.png",
         ax_vbm = None
 
     # ── Colors & line styles ─────────────────────────────────────────
-    color_vbm = "#8e44ad"  # purple (valence band color from band_plot.py)
-    color_cbm = "#2a9d8f"  # teal (conduction band color from band_plot.py)
+    color_vbm = st.vb_color
+    color_cbm = st.cb_color
 
     # Use distinct line styles for different directions
     linestyles = ["-", "--", "-.", ":"]
@@ -79,8 +82,9 @@ def plot_effective_mass(results, output="valyte_effmass.png",
 def _plot_panel(ax, masses, base_color, linestyles, markers, title,
                 _weight="bold", fscale=1.0):
     """Plot a single panel (VBM or CBM) with fit curves."""
+    look = active_style()
     # Slightly vary the color for different directions
-    from matplotlib.colors import to_rgb
+    from matplotlib.colors import to_rgb, to_hex
     base_rgb = np.array(to_rgb(base_color))
 
     for i, m in enumerate(masses):
@@ -94,16 +98,14 @@ def _plot_panel(ax, masses, base_color, linestyles, markers, title,
         # Slightly shift color for each direction
         factor = 1.0 - 0.15 * (i % 4)
         color = np.clip(base_rgb * factor, 0, 1)
-        color_hex = "#{:02x}{:02x}{:02x}".format(
-            int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)
-        )
+        color_hex = to_hex(color)
 
         ls = linestyles[i % len(linestyles)]
         mk = markers[i % len(markers)]
 
         # Data points
         ax.plot(k_data, e_data, mk, color=color_hex, markersize=7,
-                markeredgewidth=1.2, markeredgecolor="white", zorder=5)
+                markeredgewidth=1.2, markeredgecolor=look.bg, zorder=5)
 
         # Fit curve
         ax.plot(k_fit, e_fit, ls=ls, color=color_hex, lw=2.0, alpha=0.8,
@@ -127,7 +129,7 @@ def _plot_panel(ax, masses, base_color, linestyles, markers, title,
             color=color_hex,
             xytext=(5, 8 + 12 * i),
             textcoords="offset points",
-            bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
+            bbox=dict(boxstyle="round,pad=0.2", facecolor=look.bg,
                       edgecolor=color_hex, alpha=0.85, linewidth=0.8),
         )
 
@@ -135,8 +137,8 @@ def _plot_panel(ax, masses, base_color, linestyles, markers, title,
     ax.set_ylabel("Energy (eV)", fontsize=14 * fscale, fontweight=_weight, labelpad=6)
     ax.set_title(title, fontsize=13 * fscale, fontweight=_weight, pad=8)
 
-    ax.axhline(0, color="k", lw=0.6, ls="--", alpha=0.4)
-    ax.axvline(0, color="k", lw=0.6, ls="--", alpha=0.4)
+    ax.axhline(0, color=look.fg, lw=0.6, ls="--", alpha=0.4)
+    ax.axvline(0, color=look.fg, lw=0.6, ls="--", alpha=0.4)
 
     if len(masses) > 1:
         ax.legend(fontsize=9 * fscale, frameon=True, loc="best", framealpha=0.9,

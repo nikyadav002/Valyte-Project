@@ -27,7 +27,7 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 | `--fermi` | off | Draw a dashed horizontal line at the Fermi level (E = 0) |
 | `--legend-cutoff` | `0.10` | Channels whose peak is below this fraction of the largest are drawn grey and left out of the legend. Channels named with `-e` are always shown |
 | `-o`, `--output` | `valyte_combined.png` | Output filename |
-| `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
+| `--font` | `Arial` (or the style's font) | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--width` | `3.2` | Plot width in inches |
 | `--height` | `3.2` | Plot height in inches |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
@@ -35,6 +35,7 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 | `--save-data` | off | Save both band and DOS data to text files |
 | `--spin-resolved` | off | Plot spin-up/spin-down channels in distinct colors |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+| `--style` | `default` | Plot style: `default`, `xkcd` (hand-drawn), `legacy` (classic boxed axes, outward ticks, saturated colours), `lines` (no DOS fills), `dark`, `neon` or `grid`. See [Styles](dos.md#styles) |
 
 ---
 

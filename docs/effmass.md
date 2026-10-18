@@ -45,7 +45,8 @@ A fit is produced for each high-symmetry direction in the band structure — so 
 | `--dpi` | `400` | Output figure resolution in DPI (used with `--plot`) |
 | `--save-data` | off | Save results to a `.dat` named after `-o` (default `valyte_effmass.dat`) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
-| `--font` | `Arial` | Font family |
+| `--style` | `default` | Plot style: `default`, `xkcd` (hand-drawn), `legacy` (classic boxed axes, outward ticks, saturated colours), `dark`, `neon` or `grid`. See [Styles](dos.md#styles) |
+| `--font` | `Arial` (or the style's font) | Font family |
 
 ---
 

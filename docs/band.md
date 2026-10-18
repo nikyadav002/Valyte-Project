@@ -72,11 +72,12 @@ valyte band [options]
 | `--kpoints` | auto-detected | Path to `KPOINTS` file (for high-symmetry labels) |
 | `--ylim` | `-4 4` | Energy window in eV, e.g. `--ylim -3 3` |
 | `-o`, `--output` | `valyte_band.png` | Output filename |
-| `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
+| `--font` | `Arial` (or the style's font) | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--dpi` | `400` | Output figure resolution in DPI |
 | `--save-data` | off | Save band data to a `.dat` named after `-o` (default `valyte_band.dat`) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+| `--style` | `default` | Plot style: `default`, `xkcd` (hand-drawn), `legacy` (classic boxed axes, outward ticks, saturated colours), `dark`, `neon` or `grid`. See [Styles](dos.md#styles) |
 
 ```bash
 # Basic plot from current directory
@@ -195,11 +196,12 @@ valyte band --spin-resolved [options]
 | `--kpoints` | auto-detected | Path to `KPOINTS` file (for labels) |
 | `--ylim` | `-4 4` | Energy window in eV |
 | `-o`, `--output` | `valyte_band.png` | Output filename |
-| `--font` | `Arial` | Font family |
+| `--font` | `Arial` (or the style's font) | Font family |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--width` / `--height` | `4.0` | Figure dimensions in inches |
 | `--save-data` | off | Save band data to a `.dat` named after `-o` (default `valyte_band.dat`) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+| `--style` | `default` | Plot style: `default`, `xkcd` (hand-drawn), `legacy` (classic boxed axes, outward ticks, saturated colours), `dark`, `neon` or `grid`. See [Styles](dos.md#styles) |
 
 ### Examples
 
@@ -240,12 +242,13 @@ valyte band --spin-texture {sx,sy,sz} [options]
 | `--kpoints` | auto-detected | Path to `KPOINTS` file (for labels) |
 | `--ylim` | `-4 4` | Energy window in eV |
 | `-o`, `--output` | `valyte_band_sz.png` | Output filename (auto-named by component if not set) |
-| `--font` | `Arial` | Font family |
+| `--font` | `Arial` (or the style's font) | Font family |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--width` / `--height` | `4.0` | Figure dimensions in inches |
 | `--lw` | `2.0` | Band line width |
 | `--save-data` | off | Save band energies to a `.dat` named after `-o` (default `valyte_band_sz.dat` etc.) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+| `--style` | `default` | Plot style: `default`, `xkcd` (hand-drawn), `legacy` (classic boxed axes, outward ticks, saturated colours), `dark`, `neon` or `grid`. See [Styles](dos.md#styles) |
 
 ### How it works
 

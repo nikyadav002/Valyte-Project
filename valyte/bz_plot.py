@@ -7,12 +7,6 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from valyte.style import apply_style, get_font_weight, save_plot, font_scale
 
-BZ_EDGE = "#2b2d42"
-BZ_FACE = "#8d99ae"
-PATH_COLOR = "#e63946"
-POINT_COLOR = "#1d3557"
-VECTOR_COLOR = "#2a9d8f"
-
 _GREEK = ("\\Gamma", "\\Sigma", "\\Delta", "\\Lambda")
 
 
@@ -36,7 +30,7 @@ def _cartesian(lattice, frac):
 
 def plot_brillouin_zone(prim_std, path, kpoints, output="valyte_bz.png",
                         figsize=(5.5, 5.5), dpi=400, font=None, bold=True,
-                        fontsize=None, elev=22, azim=30):
+                        fontsize=None, elev=22, azim=30, style=None):
     """Draw the first Brillouin zone with the k-path overlaid.
 
     Parameters
@@ -51,11 +45,13 @@ def plot_brillouin_zone(prim_std, path, kpoints, output="valyte_bz.png",
         Viewing angles in degrees. The figure is static, so these are the only
         way to change the viewpoint.
     """
-    _weight = get_font_weight(bold)
     _fsbase = fontsize if fontsize is not None else 12
     _fscale = font_scale(fontsize, 12)
-    apply_style(font=font, bold=bold, fontsize=_fsbase,
-                linewidth=1.4 if bold else 0.8)
+    st = apply_style(font=font, bold=bold, fontsize=_fsbase,
+                     linewidth=1.4 if bold else 0.8, style=style)
+    bold = bold and st.bold
+    _weight = get_font_weight(bold)
+    colors = st.bz_colors
     if font:
         # Every label here is mathtext, which ignores font.family; point it
         # at the requested font so --font actually changes the figure.
@@ -80,7 +76,7 @@ def plot_brillouin_zone(prim_std, path, kpoints, output="valyte_bz.png",
     # ── Brillouin zone ────────────────────────────────────────────────────
     poly = Poly3DCollection(
         [np.asarray(f) for f in facets],
-        facecolor=BZ_FACE, edgecolor=BZ_EDGE,
+        facecolor=colors["face"], edgecolor=colors["edge"],
         linewidths=0.7 if bold else 0.5, alpha=0.10,
     )
     poly.set_zorder(1)
@@ -94,7 +90,7 @@ def plot_brillouin_zone(prim_std, path, kpoints, output="valyte_bz.png",
             if a not in kpoints or b not in kpoints:
                 continue
             p0, p1 = _cartesian(lattice, kpoints[a]), _cartesian(lattice, kpoints[b])
-            ax.plot(*zip(p0, p1), color=PATH_COLOR,
+            ax.plot(*zip(p0, p1), color=colors["path"],
                     lw=3.0 if bold else 2.2, solid_capstyle="round", zorder=5)
             drawn.update((a, b))
 
@@ -108,14 +104,14 @@ def plot_brillouin_zone(prim_std, path, kpoints, output="valyte_bz.png",
     offset = 0.11 * span
     for label in drawn:
         p = _cartesian(lattice, kpoints[label])
-        ax.scatter(*p, color=POINT_COLOR, s=45 * _fscale ** 2,
-                   edgecolor="white", linewidth=0.8,
+        ax.scatter(*p, color=colors["point"], s=45 * _fscale ** 2,
+                   edgecolor=st.bg, linewidth=0.8,
                    depthshade=False, zorder=6)
         # push the label radially outward so it clears the path and the zone
         direction = p / np.linalg.norm(p) if np.linalg.norm(p) > 1e-9 else np.array([0, 0, 1.0])
         lp = p + direction * offset
         ax.text(lp[0], lp[1], lp[2], _format_label(label, bold),
-                color=POINT_COLOR, fontsize=13 * _fscale,
+                color=colors["point"], fontsize=13 * _fscale,
                 ha="center", va="center", zorder=7)
 
     # ── reciprocal lattice vectors ────────────────────────────────────────
@@ -123,10 +119,10 @@ def plot_brillouin_zone(prim_std, path, kpoints, output="valyte_bz.png",
     vscale = 0.62 * bz_span / max(np.linalg.norm(v) for v in bvecs)
     for vec, name in zip(bvecs, ("b_1", "b_2", "b_3")):
         v = np.asarray(vec) * vscale
-        ax.quiver(0, 0, 0, *v, color=VECTOR_COLOR, arrow_length_ratio=0.15,
+        ax.quiver(0, 0, 0, *v, color=colors["vector"], arrow_length_ratio=0.15,
                   lw=1.2 if bold else 0.9, alpha=0.9, zorder=3)
         tip = v * 1.22
-        ax.text(*tip, f"${name}$", color=VECTOR_COLOR,
+        ax.text(*tip, f"${name}$", color=colors["vector"],
                 fontsize=10 * _fscale, ha="center", va="center", zorder=7)
 
     # ── framing ───────────────────────────────────────────────────────────

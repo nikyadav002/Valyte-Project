@@ -14,7 +14,8 @@ from pymatgen.io.vasp import BSVasprun
 from pymatgen.electronic_structure.plotter import BSPlotter
 from pymatgen.electronic_structure.core import Spin
 
-from valyte.style import apply_style, get_font_weight, save_plot, font_scale, energy_ticks
+from valyte.style import (apply_style, active_style, get_font_weight, font_scale,
+                          energy_ticks, finish_figure)
 
 # Orbital index mapping in pymatgen PROCAR order:
 # 0:s  1:py  2:pz  3:px  4:dxy  5:dyz  6:dz2  7:dxz  8:x2-y2  9-15:f
@@ -86,6 +87,7 @@ def _draw_triangle_legend(fig, tricolors, tri_labels, fscale=1.0):
     Uses vectorized barycentric interpolation rendered via imshow for a
     pixel-perfect continuous gradient with anti-aliased edges.
     """
+    look = active_style()
     color_arr = np.array([to_rgb(c) for c in tricolors])
 
     # Triangle vertices in axes-data coords: top, bottom-left, bottom-right
@@ -133,7 +135,7 @@ def _draw_triangle_legend(fig, tricolors, tri_labels, fscale=1.0):
     # White circle badge
     badge = mpatches.Circle(
         center, 0.57,
-        facecolor="white", edgecolor="0.75", linewidth=0.6,
+        facecolor=look.bg, edgecolor="0.75", linewidth=0.6,
         zorder=-5, clip_on=False,
     )
     ax_tri.add_patch(badge)
@@ -143,7 +145,7 @@ def _draw_triangle_legend(fig, tricolors, tri_labels, fscale=1.0):
 
     # Crisp triangle outline
     tri_border = mpatches.Polygon(V, closed=True, fill=False,
-                                  edgecolor="0.35", linewidth=0.6, zorder=3)
+                                  edgecolor=look.muted, linewidth=0.6, zorder=3)
     ax_tri.add_patch(tri_border)
 
     ax_tri.set_xlim(-0.22, 1.22)
@@ -152,7 +154,7 @@ def _draw_triangle_legend(fig, tricolors, tri_labels, fscale=1.0):
     ax_tri.axis("off")
 
     # Labels with white outline stroke for guaranteed readability
-    outline = [path_effects.withStroke(linewidth=3, foreground="white")]
+    outline = [path_effects.withStroke(linewidth=3, foreground=look.bg)]
 
     ax_tri.text(0.50, 1.12, tri_labels[0],
                 ha="center", va="center", fontsize=8 * fscale, fontweight="bold",
@@ -205,19 +207,21 @@ def _save_band_dat(distances, energies, ticks, filepath):
 
 
 def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png",
-                        ylim=None, figsize=(4.2, 4.2), dpi=400, font="Arial",
+                        ylim=None, figsize=(4.2, 4.2), dpi=400, font=None,
                         save_data=False, spin_resolved=False, bold=True,
     fontsize=None,
+    style=None,
 ):
     """Plot the electronic band structure from a VASP vasprun.xml."""
 
     if os.path.isdir(vasprun_path):
         vasprun_path = os.path.join(vasprun_path, "vasprun.xml")
 
-    _weight = get_font_weight(bold)
     _fsbase = fontsize if fontsize is not None else 14
     _fscale = font_scale(fontsize, 14)
-    apply_style(font=font, bold=bold, fontsize=_fsbase)
+    st = apply_style(font=font, bold=bold, fontsize=_fsbase, style=style)
+    bold = bold and st.bold
+    _weight = get_font_weight(bold)
 
     try:
         vr = BSVasprun(vasprun_path, parse_projected_eigen=False)
@@ -234,8 +238,9 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
 
     fig, ax = plt.subplots(figsize=figsize)
 
-    color_vb = "#8e44ad"
-    color_cb = "#2a9d8f"
+    color_vb = st.vb_color
+    color_cb = st.cb_color
+    spin_up_color, spin_dn_color = st.spin_colors
 
     # Determine spin keys in consistent order
     if isinstance(energies, dict):
@@ -252,8 +257,8 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
     spin_styles = {}
     if spin_resolved:
         spin_styles = {
-            spin_list[0]: {"color": "#3498db", "ls": "-"},   # spin up
-            spin_list[1]: {"color": "#e74c3c", "ls": "--"},  # spin down
+            spin_list[0]: {"color": spin_up_color, "ls": "-"},
+            spin_list[1]: {"color": spin_dn_color, "ls": "--"},
         }
 
     for i in range(len(distances)):
@@ -281,8 +286,8 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
                         ax.plot(d, band, color=c, lw=1.5, alpha=1.0)
 
     if spin_resolved:
-        up_line = mlines.Line2D([], [], color="#3498db", lw=1.5, ls="-", label="Spin up")
-        dn_line = mlines.Line2D([], [], color="#e74c3c", lw=1.5, ls="--", label="Spin down")
+        up_line = mlines.Line2D([], [], color=spin_up_color, lw=1.5, ls="-", label="Spin up")
+        dn_line = mlines.Line2D([], [], color=spin_dn_color, lw=1.5, ls="--", label="Spin down")
         ax.legend(handles=[up_line, dn_line], fontsize=10 * _fscale, frameon=True,
                   loc="upper right")
 
@@ -299,9 +304,9 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
     ax.set_xticklabels(clean_labels, fontsize=14 * _fscale, fontweight=_weight)
 
     for d in ticks["distance"]:
-        ax.axvline(d, color="k", lw=0.8, ls="-", alpha=0.3)
+        ax.axvline(d, color=st.fg, lw=0.8, ls="-", alpha=0.3)
 
-    ax.axhline(0, color="k", lw=0.8, ls="--", alpha=0.5)
+    ax.axhline(0, color=st.fg, lw=0.8, ls="--", alpha=0.5)
 
     ax.set_ylabel("Energy (eV)", fontsize=16 * _fscale, fontweight=_weight, labelpad=8)
     if ylim:
@@ -315,6 +320,7 @@ def plot_band_structure(vasprun_path, kpoints_path=None, output="valyte_band.png
     ax.set_xlim(distances[0][0], distances[-1][-1])
 
     plt.tight_layout()
+    finish_figure(fig, dpi)
     plt.savefig(output, dpi=dpi)
     plt.close(fig)
 
@@ -333,10 +339,11 @@ def plot_orbital_band_structure(
     figsize=(4.2, 4.2),
     dpi=400,
     lw=2.0,
-    font="Arial",
+    font=None,
     save_data=False,
     bold=True,
     fontsize=None,
+    style=None,
 ):
     """Plot orbital-resolved band structure with a tricolor RGB map.
 
@@ -356,10 +363,11 @@ def plot_orbital_band_structure(
     if os.path.isdir(vasprun_path):
         vasprun_path = os.path.join(vasprun_path, "vasprun.xml")
 
-    _weight = get_font_weight(bold)
     _fsbase = fontsize if fontsize is not None else 14
     _fscale = font_scale(fontsize, 14)
-    apply_style(font=font, bold=bold, fontsize=_fsbase)
+    st = apply_style(font=font, bold=bold, fontsize=_fsbase, style=style)
+    bold = bold and st.bold
+    _weight = get_font_weight(bold)
 
     if tricolor is None:
         tricolor = ["s", "p", "d"]
@@ -460,9 +468,9 @@ def plot_orbital_band_structure(
     ax.set_xticklabels(clean_labels, fontsize=14 * _fscale, fontweight=_weight)
 
     for d in ticks["distance"]:
-        ax.axvline(d, color="k", lw=0.8, ls="-", alpha=0.3)
+        ax.axvline(d, color=st.fg, lw=0.8, ls="-", alpha=0.3)
 
-    ax.axhline(0, color="k", lw=0.8, ls="--", alpha=0.5)
+    ax.axhline(0, color=st.fg, lw=0.8, ls="--", alpha=0.5)
 
     ax.set_ylabel("Energy (eV)", fontsize=16 * _fscale, fontweight=_weight, labelpad=8)
     if ylim:
@@ -476,6 +484,7 @@ def plot_orbital_band_structure(
 
     plt.tight_layout()
     _draw_triangle_legend(fig, tricolors, tri_labels, fscale=_fscale)
+    finish_figure(fig, dpi)
     plt.savefig(output, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {output}")
@@ -491,13 +500,14 @@ def plot_spin_texture_band_structure(
     ylim=None,
     figsize=(4.2, 4.2),
     dpi=400,
-    font="Arial",
+    font=None,
     save_data=False,
     spin_component="sz",
     cmap="seismic",
     lw=1.5,
     bold=True,
     fontsize=None,
+    style=None,
 ):
     """Plot non-collinear band structure colored by a spin texture component (Sx, Sy, or Sz).
 
@@ -520,10 +530,11 @@ def plot_spin_texture_band_structure(
     if os.path.isdir(vasprun_path):
         vasprun_path = os.path.join(vasprun_path, "vasprun.xml")
 
-    _weight = get_font_weight(bold)
     _fsbase = fontsize if fontsize is not None else 14
     _fscale = font_scale(fontsize, 14)
-    apply_style(font=font, bold=bold, fontsize=_fsbase)
+    st = apply_style(font=font, bold=bold, fontsize=_fsbase, style=style)
+    bold = bold and st.bold
+    _weight = get_font_weight(bold)
 
     try:
         vr = BSVasprun(vasprun_path, parse_projected_eigen=True)
@@ -613,9 +624,9 @@ def plot_spin_texture_band_structure(
     ax.set_xticklabels(clean_labels, fontsize=14 * _fscale, fontweight=_weight)
 
     for d in ticks["distance"]:
-        ax.axvline(d, color="k", lw=0.8, ls="-", alpha=0.3)
+        ax.axvline(d, color=st.fg, lw=0.8, ls="-", alpha=0.3)
 
-    ax.axhline(0, color="k", lw=0.8, ls="--", alpha=0.5)
+    ax.axhline(0, color=st.fg, lw=0.8, ls="--", alpha=0.5)
 
     ax.set_ylabel("Energy (eV)", fontsize=16 * _fscale, fontweight=_weight, labelpad=8)
     if ylim:
@@ -628,6 +639,7 @@ def plot_spin_texture_band_structure(
     ax.set_xlim(distances[0][0], distances[-1][-1])
 
     plt.tight_layout()
+    finish_figure(fig, dpi)
     plt.savefig(output, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {output}")

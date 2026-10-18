@@ -13,7 +13,7 @@ from matplotlib.ticker import AutoMinorLocator
 from pymatgen.io.vasp import Vasprun
 from pymatgen.electronic_structure.core import Spin
 
-from valyte.style import apply_style, get_font_weight, font_scale, energy_ticks
+from valyte.style import apply_style, get_font_weight, font_scale, energy_ticks, finish_figure
 from valyte.colors import assign_styles, series_stats, load_color_file  # noqa: F401 (re-exported)
 
 
@@ -64,7 +64,7 @@ def warn_missing_selection(pdos, plotting_config):
 _ORB_RANK = {"s": 0, "p": 1, "d": 2, "f": 3}
 
 
-def _panel_styles(panels, group_by, x_mask, palette, colors):
+def _panel_styles(panels, group_by, x_mask, palette, colors, minor_color=None):
     """Colour every series of a panel figure in one pass, keyed by entity.
 
     Returns {(panel_index, series_index): style}. The entity is the orbital in
@@ -95,12 +95,15 @@ def _panel_styles(panels, group_by, x_mask, palette, colors):
 
     order = sorted(range(len(flat)), key=lambda i: (entity_rank(flat[i]), i))
     styles = assign_styles([flat[i] for i in order], palette=palette,
-                           colors=colors, explicit=True)
+                           colors=colors, explicit=True, minor_color=minor_color)
     return {where[i]: st for i, st in zip(order, styles)}
 
 
-def gradient_fill(x, y, ax=None, color=None, xlim=None, **kwargs):
-    """Fill area under a curve with a vertical gradient."""
+def gradient_fill(x, y, ax=None, color=None, xlim=None, fill=True, **kwargs):
+    """Fill area under a curve with a vertical gradient.
+
+    With ``fill=False`` only the curve is drawn.
+    """
     if ax is None:
         ax = plt.gca()
 
@@ -108,6 +111,9 @@ def gradient_fill(x, y, ax=None, color=None, xlim=None, **kwargs):
         return None
 
     line, = ax.plot(x, y, color=color, lw=2, **kwargs)
+    line.set_gid("dos-y")  # lets a glow skip the zero line
+    if not fill:
+        return line
 
     fill_color = line.get_color() if color is None else color
     alpha = line.get_alpha() or 1.0
@@ -323,7 +329,7 @@ def plot_dos(
     figsize=(4.45, 4.2),
     dpi=400,
     legend_loc="auto",
-    font="Arial",
+    font=None,
     show_fermi=False,
     show_total=True,
     plotting_config=None,
@@ -334,6 +340,7 @@ def plot_dos(
     colors=None,
     fontsize=None,
     palette=None,
+    style=None,
 ):
     """Plot total and projected DOS with the Valyte style.
 
@@ -342,19 +349,22 @@ def plot_dos(
     (e.g. {"Fe(d)": "red"}) and always takes precedence.
     """
 
-    _weight = get_font_weight(bold)
     _fsbase = fontsize if fontsize is not None else 12
     _fscale = font_scale(fontsize, 12)
-    apply_style(font=font, bold=bold, fontsize=_fsbase)
+    st = apply_style(font=font, bold=bold, fontsize=_fsbase, style=style)
+    bold = bold and st.bold
+    _weight = get_font_weight(bold)
     fig, ax = plt.subplots(figsize=figsize)
 
     is_spin_polarized = Spin.down in dos.densities
 
     if show_fermi:
-        ax.axvline(0, color="k", lw=0.8, ls="--", alpha=0.7)
+        ax.axvline(0, color=st.fg, lw=0.8, ls="--", alpha=0.7)
 
     if is_spin_polarized:
-        ax.axhline(0, color="k", lw=0.5, alpha=1.0)
+        ax.axhline(0, color=st.fg, lw=0.5, alpha=1.0)
+
+    palette = palette if palette is not None else st.palette
 
     x_mask = (dos.energies >= xlim[0]) & (dos.energies <= xlim[1])
 
@@ -369,7 +379,8 @@ def plot_dos(
 
     series = _collect_series(dos, pdos, items_to_plot, x_mask, is_spin_polarized)
     styles = assign_styles(series, palette=palette, colors=colors,
-                           cutoff=legend_cutoff, explicit=bool(plotting_config))
+                           cutoff=legend_cutoff, explicit=bool(plotting_config),
+                           minor_color=st.minor_color)
 
     max_visible_y = max((s["y_up"][x_mask].max(initial=0.0) for s in series), default=0.0)
     min_visible_y = 0
@@ -382,14 +393,14 @@ def plot_dos(
                    key=lambda i: (styles[i]["rank"] is not None, styles[i]["rank"] or 0))
     legend_items = []
     for i in order:
-        s, st = series[i], styles[i]
-        line = gradient_fill(dos.energies, s["y_up"], ax=ax, color=st["color"],
-                             alpha=0.9, ls=st["ls"])
+        s, sty = series[i], styles[i]
+        line = gradient_fill(dos.energies, s["y_up"], ax=ax, color=sty["color"],
+                             alpha=0.9, ls=sty["ls"], fill=st.fill)
         if is_spin_polarized:
-            gradient_fill(dos.energies, s["y_down"], ax=ax, color=st["color"],
-                          alpha=0.9, ls=st["ls"])
-        if st["legend"] and line is not None:
-            legend_items.append((st["rank"], line, s["label"]))
+            gradient_fill(dos.energies, s["y_down"], ax=ax, color=sty["color"],
+                          alpha=0.9, ls=sty["ls"], fill=st.fill)
+        if sty["legend"] and line is not None:
+            legend_items.append((sty["rank"], line, s["label"]))
 
     legend_items.sort(key=lambda t: t[0])
     lines = [t[1] for t in legend_items]
@@ -399,12 +410,19 @@ def plot_dos(
         y_total_up = dos.spin_up
         y_total_down = -dos.spin_down
 
-        ax.plot(dos.energies, y_total_up, color="k", lw=1.2, label="Total DOS")
-        gradient_fill(dos.energies, y_total_up, ax=ax, color="k", alpha=0.15)
+        ax.plot(dos.energies, y_total_up, color=st.total_color, lw=1.2, label="Total DOS",
+                gid="dos-y")
+        if st.fill:
+            # No path effects on the fill's translucent outline: a style's halo
+            # (xkcd) would otherwise paint over the solid total line.
+            gradient_fill(dos.energies, y_total_up, ax=ax, color=st.total_color, alpha=0.15,
+                          path_effects=[])
 
         if is_spin_polarized:
-            ax.plot(dos.energies, y_total_down, color="k", lw=1.2)
-            gradient_fill(dos.energies, y_total_down, ax=ax, color="k", alpha=0.15)
+            ax.plot(dos.energies, y_total_down, color=st.total_color, lw=1.2, gid="dos-y")
+            if st.fill:
+                gradient_fill(dos.energies, y_total_down, ax=ax, color=st.total_color, alpha=0.15,
+                              path_effects=[])
 
             visible_total_up = y_total_up[x_mask]
             visible_total_down = y_total_down[x_mask]
@@ -450,6 +468,7 @@ def plot_dos(
 
     ax.xaxis.set_minor_locator(AutoMinorLocator(2))
     plt.tight_layout(pad=0.4)
+    finish_figure(fig, dpi)
     plt.savefig(out, dpi=dpi)
     plt.close(fig)
 
@@ -465,7 +484,7 @@ def plot_dos_panels(
     ylim=None,
     figsize=None,
     dpi=400,
-    font="Arial",
+    font=None,
     show_fermi=False,
     show_total=True,
     plotting_config=None,
@@ -476,6 +495,7 @@ def plot_dos_panels(
     colors=None,
     fontsize=None,
     palette=None,
+    style=None,
 ):
     """Plot DOS as vertically stacked panels — one per element (or per orbital).
 
@@ -491,10 +511,12 @@ def plot_dos_panels(
         with ``group_by="orbital"`` each element does.
     """
 
-    _weight = get_font_weight(bold)
     _fsbase = fontsize if fontsize is not None else 11
     _fscale = font_scale(fontsize, 11)
-    apply_style(font=font, bold=bold, fontsize=_fsbase)
+    st = apply_style(font=font, bold=bold, fontsize=_fsbase, style=style)
+    bold = bold and st.bold
+    _weight = get_font_weight(bold)
+    palette = palette if palette is not None else st.palette
 
     is_spin_polarized = Spin.down in dos.densities
     x_mask = (dos.energies >= xlim[0]) & (dos.energies <= xlim[1])
@@ -590,28 +612,32 @@ def plot_dos_panels(
     y_total_up = dos.spin_up
     y_total_down = -dos.spin_down
 
-    styles = _panel_styles(panels, group_by, x_mask, palette, colors)
+    styles = _panel_styles(panels, group_by, x_mask, palette, colors, st.minor_color)
 
     for idx, (panel_label, series) in enumerate(panels):
         ax = axes[idx]
 
         if show_fermi:
-            ax.axvline(0, color="k", lw=0.8, ls="--", alpha=0.5, zorder=0)
+            ax.axvline(0, color=st.fg, lw=0.8, ls="--", alpha=0.5, zorder=0)
 
         if is_spin_polarized:
-            ax.axhline(0, color="k", lw=0.4, alpha=0.8)
+            ax.axhline(0, color=st.fg, lw=0.4, alpha=0.8)
 
         # Draw semi-transparent total DOS as backdrop
-        if show_total:
+        if show_total and st.fill:
             ax.fill_between(
                 dos.energies, 0, y_total_up,
-                color="#d4d4d4", alpha=0.35, lw=0, zorder=0,
+                color=st.backdrop, alpha=0.35, lw=0, zorder=0,
             )
             if is_spin_polarized:
                 ax.fill_between(
                     dos.energies, 0, y_total_down,
-                    color="#d4d4d4", alpha=0.35, lw=0, zorder=0,
+                    color=st.backdrop, alpha=0.35, lw=0, zorder=0,
                 )
+        elif show_total:
+            ax.plot(dos.energies, y_total_up, color=st.backdrop_line, lw=1.0, zorder=0)
+            if is_spin_polarized:
+                ax.plot(dos.energies, y_total_down, color=st.backdrop_line, lw=1.0, zorder=0)
 
         panel_max_y = 0
         panel_min_y = 0
@@ -620,8 +646,8 @@ def plot_dos_panels(
         legend_labels = []
 
         for j, (s_label, y_up, y_down) in enumerate(series):
-            st = styles[(idx, j)]
-            c = st["color"]
+            sty = styles[(idx, j)]
+            c = sty["color"]
 
             vis_up = y_up[x_mask]
             vis_dn = y_down[x_mask]
@@ -631,11 +657,11 @@ def plot_dos_panels(
             if is_spin_polarized and len(vis_dn) > 0:
                 panel_min_y = min(panel_min_y, np.min(vis_dn))
 
-            l = gradient_fill(dos.energies, y_up, ax=ax, color=c, alpha=0.85, ls=st["ls"])
+            l = gradient_fill(dos.energies, y_up, ax=ax, color=c, alpha=0.85, ls=sty["ls"], fill=st.fill)
             if is_spin_polarized:
-                gradient_fill(dos.energies, y_down, ax=ax, color=c, alpha=0.85, ls=st["ls"])
+                gradient_fill(dos.energies, y_down, ax=ax, color=c, alpha=0.85, ls=sty["ls"], fill=st.fill)
 
-            if l is not None and st["legend"]:
+            if l is not None and sty["legend"]:
                 legend_lines.append(l)
                 legend_labels.append(s_label)
 
@@ -665,7 +691,7 @@ def plot_dos_panels(
             fontsize=13 * _fscale, fontweight=_weight,
             va="top", ha="left",
             bbox=dict(
-                facecolor="white", edgecolor="none",
+                facecolor=st.bg, edgecolor="none",
                 alpha=0.75, boxstyle="round,pad=0.2",
             ),
         )
@@ -694,7 +720,7 @@ def plot_dos_panels(
         # Light border between panels
         for spine in ("top", "bottom"):
             ax.spines[spine].set_linewidth(0.6)
-            ax.spines[spine].set_color("#888888")
+            ax.spines[spine].set_color(st.separator)
 
     # Bottom panel: energy axis label and ticks
     bottom_ax = axes[-1]
@@ -712,6 +738,7 @@ def plot_dos_panels(
     )
 
     fig.subplots_adjust(left=0.10, right=0.97, top=0.97, bottom=0.08)
+    finish_figure(fig, dpi)
     fig.savefig(out, dpi=dpi)
     plt.close(fig)
 

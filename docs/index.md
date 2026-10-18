@@ -81,6 +81,7 @@ take the same output flags, so once you know them they work everywhere:
 | `--format {png,pdf,svg}` | Figure format |
 | `--dpi` | Resolution for raster output (default 400) |
 | `--no-bold` | Lighter type and thinner lines, closer to a journal house style |
+| `--style {default,xkcd,legacy,lines,dark,neon,grid}` | Overall look: hand-drawn `xkcd`, classic `legacy`, `lines` without DOS fills, `dark` and `neon` for dark slides, `grid` with light grid lines |
 
 A few small exceptions: `valyte effmass` only draws its fit if you ask for it
 with `--plot`, `valyte converge` takes `--save-data` even though it prints a

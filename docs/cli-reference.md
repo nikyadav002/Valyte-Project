@@ -148,11 +148,12 @@ valyte band [options]
 | `--kpoints` | auto-detected | Path to `KPOINTS` file for high-symmetry labels |
 | `--ylim` | `-4 4` | Energy window in eV |
 | `-o`, `--output` | `valyte_band.png` | Output filename |
-| `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
+| `--font` | `Arial` (or the style's font) | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--dpi` | `400` | Output figure resolution in DPI |
 | `--save-data` | off | Save band data to a `.dat` named after `-o` (default `valyte_band.dat`) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+| `--style` | `default` | Plot style: `default`, `xkcd` (hand-drawn), `legacy` (classic boxed axes, outward ticks, saturated colours), `dark`, `neon` or `grid`. See [Styles](dos.md#styles) |
 
 ### Tricolor mode
 
@@ -245,13 +246,14 @@ valyte dos [path/to/vasprun.xml] [options]
 | `--pdos` | off | Show only projected DOS (hide total) |
 | `--legend-cutoff` | `0.10` | Channels whose peak is below this fraction of the largest are drawn grey and left out of the legend. Channels named with `-e` are always shown |
 | `-o`, `--output` | `valyte_dos.png` | Output filename |
-| `--font` | `Arial` | Font family |
+| `--font` | `Arial` (or the style's font) | Font family |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--dpi` | `400` | Output figure resolution in DPI |
 | `--save-data` | off | Save DOS data to a `.dat` named after `-o` (default `valyte_dos.dat`) |
 | `--panels` | off | Split DOS into stacked panels (one per element) |
 | `--panel-by` | `element` | Grouping for panels: `element` or `orbital` |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+| `--style` | `default` | Plot style: `default`, `xkcd` (hand-drawn), `legacy` (classic boxed axes, outward ticks, saturated colours), `lines` (no DOS fills), `dark`, `neon` or `grid`. See [Styles](dos.md#styles) |
 
 Element/orbital formats: `Fe` (element total), `Fe(d)` or `Fe:d` (specific orbital), `-e Fe O` (multiple elements), `Fe(d):D55E00` (inline colour/hex).
 
@@ -338,7 +340,8 @@ valyte effmass [options]
 | `--dpi` | `400` | Output figure resolution in DPI (used with `--plot`) |
 | `--save-data` | off | Save results to a `.dat` named after `-o` (default `valyte_effmass.dat`) |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
-| `--font` | `Arial` | Font family |
+| `--style` | `default` | Plot style: `default`, `xkcd` (hand-drawn), `legacy` (classic boxed axes, outward ticks, saturated colours), `dark`, `neon` or `grid`. See [Styles](dos.md#styles) |
+| `--font` | `Arial` (or the style's font) | Font family |
 
 !!! warning "Requires a line-mode band structure calculation. SCF calculations will raise an error."
 
@@ -406,7 +409,7 @@ valyte combined [path] [options]
 | `--scale` | `1.0` | Scaling factor for the DOS axis |
 | `--fermi` | off | Draw dashed horizontal line at the Fermi level (E = 0) |
 | `--legend-cutoff` | `0.10` | Channels whose peak is below this fraction of the largest are drawn grey and left out of the legend. Channels named with `-e` are always shown |
-| `--font` | `Arial` | Font family |
+| `--font` | `Arial` (or the style's font) | Font family |
 | `--width` | `3.2` | Plot width in inches |
 | `--height` | `3.2` | Plot height in inches |
 | `--save-data` | off | Save both band and DOS data to text files |
@@ -414,6 +417,7 @@ valyte combined [path] [options]
 | `--dpi` | `400` | Output figure resolution in DPI |
 | `--spin-resolved` | off | Plot spin-up/spin-down channels in distinct colors |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+| `--style` | `default` | Plot style: `default`, `xkcd` (hand-drawn), `legacy` (classic boxed axes, outward ticks, saturated colours), `lines` (no DOS fills), `dark`, `neon` or `grid`. See [Styles](dos.md#styles) |
 
 **Examples:**
 
@@ -450,6 +454,7 @@ valyte bz [options]
 | `--dpi` | `400` | Output figure resolution |
 | `--fontsize` | per-plot default | Base font size in points |
 | `--no-bold` | off | Normal font weight and thinner lines |
+| `--style` | `default` | Plot style: `default`, `xkcd` (hand-drawn), `legacy` (classic boxed axes, outward ticks, saturated colours), `dark`, `neon` or `grid`. See [Styles](dos.md#styles) |
 | `--font` | — | Font family for labels (`Arial`, `Helvetica`, `Times New Roman`); unset keeps the default math font |
 
 **Examples:**

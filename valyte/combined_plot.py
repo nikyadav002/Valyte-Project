@@ -18,14 +18,15 @@ from pymatgen.electronic_structure.core import Spin
 
 from valyte.dos_plot import load_dos, _collect_series, warn_missing_selection
 from valyte.colors import assign_styles
-from valyte.style import apply_style, get_font_weight, save_plot, font_scale
+from valyte.style import apply_style, get_font_weight, font_scale, finish_figure
 
 
-def gradient_fill_rotated(y, x, ax=None, color=None, **kwargs):
+def gradient_fill_rotated(y, x, ax=None, color=None, fill=True, **kwargs):
     """Fill area under a curve with a horizontal gradient (useful for rotated DOS).
 
     y: DOS values (plotted on X-axis)
     x: Energies (plotted on Y-axis)
+    With ``fill=False`` only the curve is drawn.
     """
     if ax is None:
         ax = plt.gca()
@@ -34,6 +35,9 @@ def gradient_fill_rotated(y, x, ax=None, color=None, **kwargs):
         return None
 
     line, = ax.plot(y, x, color=color, lw=1.5, **kwargs)
+    line.set_gid("dos-x")  # lets a glow skip the zero line
+    if not fill:
+        return line
 
     fill_color = line.get_color() if color is None else color
     alpha = line.get_alpha() or 1.0
@@ -94,7 +98,7 @@ def plot_combined(
     ylim=(-4, 4),
     figsize=(3.2, 3.2),
     dpi=400,
-    font="Arial",
+    font=None,
     show_fermi=False,
     scale_factor=1.0,
     legend_cutoff=0.10,
@@ -104,6 +108,7 @@ def plot_combined(
     colors=None,
     fontsize=None,
     palette=None,
+    style=None,
 ):
     """Plot combined Band Structure and DOS side-by-side.
 
@@ -118,10 +123,11 @@ def plot_combined(
         raise FileNotFoundError(f"{vasprun_path} not found")
 
     # Font and styling
-    _weight = get_font_weight(bold)
     _fsbase = fontsize if fontsize is not None else 12
     _fscale = font_scale(fontsize, 12)
-    apply_style(font=font, bold=bold, fontsize=_fsbase)
+    st = apply_style(font=font, bold=bold, fontsize=_fsbase, style=style)
+    bold = bold and st.bold
+    _weight = get_font_weight(bold)
 
     # When the DOS comes from the same vasprun.xml (the default), parse the
     # file once and serve both panels from it.  A separate --dos source still
@@ -180,8 +186,9 @@ def plot_combined(
     )
 
     # 1. Plot Band Structure
-    color_vb = "#8e44ad"
-    color_cb = "#2a9d8f"
+    color_vb = st.vb_color
+    color_cb = st.cb_color
+    spin_up_color, spin_dn_color = st.spin_colors
 
     if isinstance(band_energies, dict):
         spin_list = list(band_energies.keys())
@@ -195,8 +202,8 @@ def plot_combined(
     spin_styles = {}
     if spin_resolved:
         spin_styles = {
-            spin_list[0]: {"color": "#3498db", "ls": "-"},
-            spin_list[1]: {"color": "#e74c3c", "ls": "--"},
+            spin_list[0]: {"color": spin_up_color, "ls": "-"},
+            spin_list[1]: {"color": spin_dn_color, "ls": "--"},
         }
 
     for i in range(len(distances)):
@@ -221,8 +228,8 @@ def plot_combined(
                         ax_band.plot(d, band, color=c, lw=1.5, alpha=1.0)
 
     if spin_resolved:
-        up_line = mlines.Line2D([], [], color="#3498db", lw=1.5, ls="-", label="Spin up")
-        dn_line = mlines.Line2D([], [], color="#e74c3c", lw=1.5, ls="--", label="Spin down")
+        up_line = mlines.Line2D([], [], color=spin_up_color, lw=1.5, ls="-", label="Spin up")
+        dn_line = mlines.Line2D([], [], color=spin_dn_color, lw=1.5, ls="--", label="Spin down")
         ax_band.legend(handles=[up_line, dn_line], fontsize=10 * _fscale, frameon=False, loc="upper left")
 
     # Set band structure axes
@@ -239,10 +246,10 @@ def plot_combined(
     ax_band.set_xticklabels(clean_labels, fontsize=12 * _fscale, fontweight=_weight)
 
     for d in ticks["distance"]:
-        ax_band.axvline(d, color="k", lw=0.8, ls="-", alpha=0.3)
+        ax_band.axvline(d, color=st.fg, lw=0.8, ls="-", alpha=0.3)
 
     if show_fermi:
-        ax_band.axhline(0, color="k", lw=0.8, ls="--", alpha=0.7)
+        ax_band.axhline(0, color=st.fg, lw=0.8, ls="--", alpha=0.7)
 
     ax_band.set_ylabel("Energy (eV)", fontsize=14 * _fscale, weight=_weight, labelpad=6)
     ax_band.set_ylim(ylim)
@@ -255,12 +262,15 @@ def plot_combined(
     # 2. Plot DOS
     is_spin_polarized = Spin.down in dos_data.densities
 
+    palette = palette if palette is not None else st.palette
+
     dos_x_mask = (dos_data.energies >= ylim[0]) & (dos_data.energies <= ylim[1])
 
     series = _collect_series(dos_data, pdos_data, plotting_config, dos_x_mask,
                              is_spin_polarized)
     styles = assign_styles(series, palette=palette, colors=colors,
-                           cutoff=legend_cutoff, explicit=user_selected)
+                           cutoff=legend_cutoff, explicit=user_selected,
+                           minor_color=st.minor_color)
 
     max_visible_dos = max((s["y_up"][dos_x_mask].max(initial=0.0) for s in series), default=0.0)
     min_visible_dos = 0
@@ -273,15 +283,15 @@ def plot_combined(
                    key=lambda i: (styles[i]["rank"] is not None, styles[i]["rank"] or 0))
     legend_items = []
     for i in order:
-        s, st = series[i], styles[i]
+        s, sty = series[i], styles[i]
         # DOS values on the x-axis, energies on the y-axis
         line = gradient_fill_rotated(s["y_up"], dos_data.energies, ax=ax_dos,
-                                     color=st["color"], alpha=0.9, ls=st["ls"])
+                                     color=sty["color"], alpha=0.9, ls=sty["ls"], fill=st.fill)
         if is_spin_polarized:
             gradient_fill_rotated(s["y_down"], dos_data.energies, ax=ax_dos,
-                                  color=st["color"], alpha=0.9, ls=st["ls"])
-        if st["legend"] and line is not None:
-            legend_items.append((st["rank"], line, s["label"]))
+                                  color=sty["color"], alpha=0.9, ls=sty["ls"], fill=st.fill)
+        if sty["legend"] and line is not None:
+            legend_items.append((sty["rank"], line, s["label"]))
     legend_items.sort(key=lambda t: t[0])
 
     # Set limits and ticks for DOS plot
@@ -294,7 +304,7 @@ def plot_combined(
     ax_dos.set_xlim(dos_xlim_min, dos_xlim_max)
 
     if show_fermi:
-        ax_dos.axhline(0, color="k", lw=0.8, ls="--", alpha=0.7)
+        ax_dos.axhline(0, color=st.fg, lw=0.8, ls="--", alpha=0.7)
 
     # Ticks only at the bottom, nowhere else, and no numbers (labels)!
     ax_dos.tick_params(axis="x", direction="in", which="both", bottom=True, top=False, labelbottom=False)
@@ -330,6 +340,7 @@ def plot_combined(
     # Force formatting y-tick numbers to bold
     plt.setp(ax_band.get_yticklabels(), fontweight=_weight)
 
+    finish_figure(fig, dpi)
     fig.savefig(output, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {output}")

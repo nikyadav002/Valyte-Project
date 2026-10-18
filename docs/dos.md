@@ -28,13 +28,14 @@ The path can be a positional argument, passed via `--vasprun`, or omitted to use
 | `--pdos` | off | Show only projected DOS (hide total DOS) |
 | `--legend-cutoff` | `0.10` | Channels whose peak is below this fraction of the largest are drawn grey and left out of the legend. Channels named with `-e` are always shown |
 | `-o`, `--output` | `valyte_dos.png` | Output filename |
-| `--font` | `Arial` | Font family: `Arial`, `Helvetica`, `Times New Roman` |
+| `--font` | `Arial` (or the style's font) | Font family: `Arial`, `Helvetica`, `Times New Roman` |
 | `--format` | from `-o` extension | Output figure format: `png`, `pdf`, or `svg` |
 | `--dpi` | `400` | Output figure resolution in DPI |
 | `--save-data` | off | Save DOS data to a `.dat` named after `-o` (default `valyte_dos.dat`, or `valyte_dos_panels.dat` with `--panels`) |
 | `--panels` | off | Split DOS into vertically stacked panels (one per element) |
 | `--panel-by` | `element` | Grouping mode for panels: `element` or `orbital` |
 | `--no-bold` | off | Use normal font weight and thinner lines/ticks (scientific style) |
+| `--style` | `default` | Plot style: `default`, `xkcd` (hand-drawn), `legacy` (classic boxed axes, outward ticks, saturated colours), `lines` (no DOS fills), `dark`, `neon` or `grid`. See [Styles](#styles) |
 
 ---
 
@@ -51,11 +52,37 @@ The `-e` / `--elements` flag accepts element names, orbital projections, and inl
 
 ---
 
+## Styles
+
+`--style` changes the overall look of every plot (`dos`, `band`, `combined`, `effmass` and `bz`):
+
+| Style | Look |
+|---|---|
+| `default` | Valyte's standard figures |
+| `xkcd` | Hand-drawn lines and lettering. Uses the first installed of xkcd Script, xkcd, Humor Sans, Comic Neue or Comic Sans MS |
+| `legacy` | Classic look: closed black frame, outward ticks, square legend box, saturated line colours, no fills |
+| `lines` | Like `default`, but without the gradient fills under DOS curves |
+| `dark` | Dark background with light text and a white total DOS, for talks on dark slides. Keeps the default colours, which stay clear on dark |
+| `neon` | Deep blue background with glowing neon lines (cyan, pink, yellow, orange, violet) and a faint grid |
+| `grid` | Like `default`, plus light grid lines behind the data at the axis ticks; handy for reading off energies |
+
+```bash
+valyte dos --style xkcd
+valyte band --style legacy
+valyte dos --style lines --palette muted
+valyte dos --style dark
+valyte band --style neon
+```
+
+Each style has its own palette: `default`, `lines`, `dark` and `grid` use `wong`, while `xkcd`, `legacy` and `neon` use colours that suit their look. An explicit `--palette` always wins, and custom colours (`-c`, `--colors-file`, inline `-e`) override single series in any style. Likewise `--font` overrides a style's font. The `xkcd` and `legacy` styles always use regular weight, so `--no-bold` makes no difference there.
+
+---
+
 ## Colours
 
 ### Palettes
 
-Projected DOS curves take their colours from a palette, chosen with `--palette`:
+Projected DOS curves take their colours from a palette, chosen with `--palette` (by default the [style's](#styles) own palette):
 
 | Palette | Colours | Character |
 |---|---|---|
