@@ -120,7 +120,7 @@ valyte band kpt-gen [options]
 | `--symprec` | `0.01` | Symmetry precision |
 
 !!! important "Use POSCAR_standard for the calculation"
-    A `POSCAR_standard` file is also written. You **must** use this standardized cell for your band calculation — the k-path corresponds to this specific cell orientation.
+    If the input is not already the standard primitive cell, a `POSCAR_standard` file is written and a warning printed. You **must** then use this standardized cell for your band calculation — the k-path corresponds to this specific cell orientation.
 
 **Examples:**
 

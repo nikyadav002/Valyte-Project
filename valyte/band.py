@@ -63,9 +63,6 @@ def generate_band_kpoints(poscar_path="POSCAR", npoints=40, output="KPOINTS", sy
 
     prim_std, path, kpoints = resolve_kpath(poscar_path, symprec=symprec, mode=mode)
 
-    standard_filename = "POSCAR_standard"
-    prim_std.to(filename=standard_filename)
-
     try:
         with open(output, "w") as f:
             f.write("KPOINTS for Band Structure\n")
@@ -90,10 +87,21 @@ def generate_band_kpoints(poscar_path="POSCAR", npoints=40, output="KPOINTS", sy
                     f.write("\n")
 
         print(f"Generated {output} ({' - '.join([' - '.join(seg) for seg in path])})")
-        print(f"Generated {standard_filename} (Standardized Primitive Cell)")
-        print("IMPORTANT: Use POSCAR_standard for the band calculation.")
     except Exception as e:
         raise RuntimeError(f"Error writing KPOINTS file: {e}")
+
+    # Same as sumo-kgen: the path is only valid for the standard cell, so
+    # write that cell only when the input is not already it.
+    structure = Structure.from_file(poscar_path)
+    if not np.allclose(structure.lattice.matrix, prim_std.lattice.matrix, atol=1e-8):
+        standard_filename = "POSCAR_standard"
+        prim_std.to(filename=standard_filename)
+        print(f"Generated {standard_filename} (Standardized Primitive Cell)")
+        print(
+            f"WARNING: {poscar_path} does not match the standard primitive cell, "
+            f"so the k-path is not valid for it. Run the band calculation with "
+            f"{standard_filename}."
+        )
 
     try:
         print("Generating POTCAR (VASP-recommended, PBE_64)...")

@@ -45,7 +45,7 @@ valyte band kpt-gen --mode seekpath
 ```
 
 !!! important "Use POSCAR_standard for the calculation"
-    The command also writes a `POSCAR_standard` file. You **must** use this standardized primitive cell for your VASP calculation — the k-path is defined in its reciprocal space.
+    If your POSCAR is not already the standard primitive cell, the command writes a `POSCAR_standard` file and prints a warning. You **must** then use this standardized primitive cell for your VASP calculation — the k-path is defined in its reciprocal space.
 
     ```bash
     cp POSCAR_standard POSCAR
